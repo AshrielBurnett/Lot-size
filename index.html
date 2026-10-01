@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ash's Lot Size">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0d">
+<title>Ash's Lot Size Calculator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overscroll-behavior:none; -webkit-text-size-adjust:100%; }
+button { -webkit-tap-highlight-color:transparent; -webkit-user-select:none; touch-action:manipulation; }
+:root {
+  --bg: #0d0d0d; --bg2: #141414; --bg3: #1c1c1c;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.14);
+  --text: #efefef; --text2: #888; --text3: #4a4a4a; --mono: 'Courier New', monospace;
+  --gold-l: #f0b429; --gold-bg: rgba(201,146,10,0.1); --gold-bd: rgba(201,146,10,0.35);
+  --nas-l: #60a5fa;  --nas-bg: rgba(59,130,246,0.1);  --nas-bd: rgba(59,130,246,0.35);
+  --oil-l: #f87849;  --oil-bg: rgba(224,69,26,0.1);   --oil-bd: rgba(224,69,26,0.35);
+  --btc-l: #ffb454;  --btc-bg: rgba(247,147,26,0.1);  --btc-bd: rgba(247,147,26,0.4);
+  --gbp-l: #c084fc;  --gbp-bg: rgba(168,85,247,0.1);  --gbp-bd: rgba(168,85,247,0.4);
+  --doge-l: #22d3ee; --doge-bg: rgba(34,211,238,0.1); --doge-bd: rgba(34,211,238,0.4);
+  --green: #4ade80; --red: #f87171;
+  --focus: #8ab4ff;
+  color-scheme: dark;
+}
+body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; justify-content:center; align-items:flex-start; padding-block:max(1.6rem, env(safe-area-inset-top)) max(3rem, env(safe-area-inset-bottom)); padding-inline:max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+.app { width:100%; max-width:460px; }
+
+.top-header { text-align:center; margin-bottom:1.2rem; }
+.top-header h1 { font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--text2); font-weight:400; }
+.risk-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:1.1rem; }
+.risk-btn { border:.5px solid var(--border2); border-radius:8px; background:var(--bg2); color:var(--text2); font-family:var(--mono); font-size:17px; font-weight:700; padding:11px 6px 9px; cursor:pointer; transition:all .12s; user-select:none; }
+.risk-btn small { display:block; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-size:9.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-top:3px; }
+.risk-btn.on { border-color:rgba(74,222,128,.5); background:rgba(74,222,128,.1); color:var(--green); }
+.risk-btn.on small { color:var(--green); opacity:.75; }
+
+.bal-card { background:var(--bg2); border:.5px solid var(--border2); border-radius:9px; padding:11px 14px; margin-bottom:1.1rem; }
+.bal-card label { font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--text2); font-weight:600; display:block; margin-bottom:6px; }
+.bal-card input { background:var(--bg3); border:.5px solid var(--border); border-radius:6px; color:var(--text); font-size:19px; font-family:var(--mono); padding:9px 12px; outline:none; width:100%; }
+.bal-card input:focus { border-color:var(--border2); }
+
+.tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:1rem; }
+.tab { border:.5px solid var(--border2); border-radius:8px; background:var(--bg2); padding:10px 4px; font:inherit; color:inherit; cursor:pointer; text-align:center; transition:all .12s; outline:none; user-select:none; }
+.tab .tab-name { font-size:12px; font-weight:600; letter-spacing:.05em; display:block; color:var(--text2); }
+.tab .tab-pair { font-size:9.5px; color:var(--text3); display:block; margin-top:2px; }
+.tab.active-gold { border-color:var(--gold-bd); background:var(--gold-bg); }
+.tab.active-gold .tab-name { color:var(--gold-l); }
+.tab.active-nas { border-color:var(--nas-bd); background:var(--nas-bg); }
+.tab.active-nas .tab-name { color:var(--nas-l); }
+.tab.active-oil { border-color:var(--oil-bd); background:var(--oil-bg); }
+.tab.active-oil .tab-name { color:var(--oil-l); }
+.tab.active-btc { border-color:var(--btc-bd); background:var(--btc-bg); }
+.tab.active-btc .tab-name { color:var(--btc-l); }
+.tab.active-gbp { border-color:var(--gbp-bd); background:var(--gbp-bg); }
+.tab.active-gbp .tab-name { color:var(--gbp-l); }
+.tab.active-doge { border-color:var(--doge-bd); background:var(--doge-bg); }
+.tab.active-doge .tab-name { color:var(--doge-l); }
+
+.sec-label { font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--text3); font-weight:600; margin-bottom:7px; }
+
+.chip-row { display:grid; gap:6px; margin-bottom:13px; grid-template-columns:repeat(5,1fr); }
+.chip { border:.5px solid var(--border2); border-radius:7px; background:var(--bg2); padding:11px 2px; min-width:0; font-family:var(--mono); font-size:13.5px; font-family:var(--mono); cursor:pointer; color:var(--text2); text-align:center; transition:all .1s; user-select:none; }
+.chip:active { transform:scale(.96); }
+.chip.on { color:var(--bg); font-weight:700; }
+.mkt-gold .chip.on { background:var(--gold-l); border-color:var(--gold-l); }
+.mkt-nas .chip.on { background:var(--nas-l); border-color:var(--nas-l); }
+.mkt-oil .chip.on { background:var(--oil-l); border-color:var(--oil-l); }
+.mkt-btc .chip.on { background:var(--btc-l); border-color:var(--btc-l); }
+.mkt-gbp .chip.on { background:var(--gbp-l); border-color:var(--gbp-l); }
+.mkt-doge .chip.on { background:var(--doge-l); border-color:var(--doge-l); }
+.chip.custom { font-size:11px; }
+.chip input { width:100%; background:transparent; border:none; outline:none; color:inherit; font-family:var(--mono); font-size:16px; text-align:center; padding:0; }
+.chip.on input { color:var(--bg); font-weight:700; }
+.chip.on input::placeholder { color:rgba(0,0,0,0.5); }
+.chip input::placeholder { color:var(--text3); }
+
+.dir-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:15px; }
+.dir-btn { border:.5px solid var(--border); border-radius:7px; padding:9px; font-family:inherit; font-size:12.5px; cursor:pointer; background:var(--bg2); color:var(--text3); transition:all .12s; user-select:none; }
+.dir-btn.long-sel { border-color:rgba(74,222,128,.45); background:rgba(74,222,128,.09); color:var(--green); font-weight:600; }
+.dir-btn.short-sel { border-color:rgba(248,113,113,.45); background:rgba(248,113,113,.09); color:var(--red); font-weight:600; }
+
+.warn-box { background:rgba(248,113,113,.08); border:.5px solid rgba(248,113,113,.3); border-radius:7px; padding:9px 12px; font-size:12px; line-height:1.45; color:var(--red); margin-bottom:11px; display:none; }
+
+.result { border-radius:12px; padding:22px 20px 18px; border:.5px solid var(--border2); background:var(--bg2); text-align:center; margin-bottom:10px; }
+.result .r-lbl { font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--text3); font-weight:600; margin-bottom:10px; }
+.result .r-lot { font-size:66px; font-family:var(--mono); line-height:.95; font-weight:700; letter-spacing:-.02em; }
+.mkt-gold .r-lot { color:var(--gold-l); }
+.mkt-nas .r-lot { color:var(--nas-l); }
+.mkt-oil .r-lot { color:var(--oil-l); }
+.mkt-btc .r-lot { color:var(--btc-l); }
+.mkt-gbp .r-lot { color:var(--gbp-l); }
+.mkt-doge .r-lot { color:var(--doge-l); }
+.result .r-sub { font-size:10.5px; color:var(--text3); font-family:var(--mono); margin-top:9px; }
+.result .r-risk { font-size:12.5px; color:var(--text2); font-family:var(--mono); margin-top:5px; }
+
+.mini-table { background:var(--bg2); border:.5px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:8px; }
+.mini-row { display:flex; justify-content:space-between; gap:12px; padding:7px 13px; border-bottom:.5px solid var(--border); font-size:11.5px; }
+.mini-row:last-child { border-bottom:none; }
+.mini-row .lbl { color:var(--text2); }
+.mini-row .val { color:var(--text); font-family:var(--mono); }
+.info-note { font-size:10px; color:var(--text3); font-family:var(--mono); text-align:center; margin-top:7px; letter-spacing:.04em; }
+.footer { margin-top:1.7rem; padding-top:.9rem; border-top:.5px solid var(--border); font-size:10px; color:var(--text3); text-align:center; font-family:var(--mono); letter-spacing:.08em; }
+
+.spec-field { display:flex; align-items:center; gap:8px; margin-bottom:13px; flex-wrap:wrap; }
+.spec-field label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); font-weight:600; }
+.spec-field input { background:var(--bg3); border:.5px solid var(--border); border-radius:5px; color:var(--text); font-size:16px; font-family:var(--mono); padding:5px 8px; outline:none; width:90px; }
+.spec-field .hint { font-size:10px; color:var(--text3); font-family:var(--mono); width:100%; }
+
+button:focus-visible, input:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.chip input:focus-visible { outline:none; }
+.chip.custom:focus-within { outline:2px solid var(--focus); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce) { .tab, .chip, .dir-btn, .risk-btn { transition:none; } .chip:active { transform:none; } }
+@media (max-width:400px) {
+  .result .r-lot { font-size:54px; }
+  .chip { font-size:12.5px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="top-header">
+  <h1>Ash's Lot Size Calculator</h1>
+</div>
+
+<div class="bal-card">
+  <label for="bal">Account balance</label>
+  <input type="number" inputmode="decimal" id="bal" value="10000" oninput="recalc(); save();" placeholder="Balance $">
+</div>
+
+<div class="sec-label" id="risk-label">Risk per trade</div>
+<div class="risk-row" role="group" aria-labelledby="risk-label">
+  <button class="risk-btn" id="risk-015" onclick="setRisk(0.15)" aria-pressed="false">0.15%<small>Reduced</small></button>
+  <button class="risk-btn on" id="risk-030" onclick="setRisk(0.30)" aria-pressed="true">0.30%<small>Standard</small></button>
+</div>
+
+<div class="tabs">
+  <button class="tab active-gold" id="tab-gold" onclick="setMkt('gold')"><span class="tab-name">GOLD</span><span class="tab-pair">XAU/USD</span></button>
+  <button class="tab" id="tab-nas" onclick="setMkt('nas')"><span class="tab-name">NAS100</span><span class="tab-pair">US Tech</span></button>
+  <button class="tab" id="tab-oil" onclick="setMkt('oil')"><span class="tab-name">CRUDE</span><span class="tab-pair">US Oil</span></button>
+  <button class="tab" id="tab-btc" onclick="setMkt('btc')"><span class="tab-name">BTC</span><span class="tab-pair">BTC/USD</span></button>
+  <button class="tab" id="tab-gbp" onclick="setMkt('gbp')"><span class="tab-name">GBPJPY</span><span class="tab-pair">Pound-Yen</span></button>
+  <button class="tab" id="tab-doge" onclick="setMkt('doge')"><span class="tab-name">DOGE</span><span class="tab-pair">DOGE/USD</span></button>
+</div>
+
+<div id="mkt-wrap" class="mkt-gold">
+
+  <div class="sec-label" id="sl-label">Stop loss distance (pips)</div>
+  <div class="chip-row" id="sl-chips"></div>
+
+  <div class="spec-field" id="spec-nas" style="display:none">
+    <label for="nas-ppv">$ / point / lot</label>
+    <input type="number" id="nas-ppv" value="1" step="0.5" oninput="recalc(); save();">
+    <span class="hint">Most brokers $1 · some use $2 or $20 — check MT5 Symbol Spec</span>
+  </div>
+  <div class="spec-field" id="spec-oil" style="display:none">
+    <label for="oil-bpl">Barrels / lot</label>
+    <input type="number" id="oil-bpl" value="1000" step="100" oninput="recalc(); save();">
+    <span class="hint">Standard 1,000 · some brokers use 100</span>
+  </div>
+  <div class="spec-field" id="spec-btc" style="display:none">
+    <label for="btc-cs">BTC / lot</label>
+    <input type="number" id="btc-cs" value="1" step="0.1" oninput="recalc(); save();">
+    <label for="btc-min" style="margin-left:4px">Min lot</label>
+    <input type="number" id="btc-min" value="0.01" step="0.01" oninput="recalc(); save();">
+    <span class="hint">Most brokers 1 BTC/lot · min lot often 0.01, some 0.10 — check MT5 Symbol Spec</span>
+  </div>
+  <div class="spec-field" id="spec-gbp" style="display:none">
+    <label for="gbp-rate">USD/JPY rate</label>
+    <input type="number" id="gbp-rate" value="150" step="0.5" oninput="recalc(); save();">
+    <span class="hint">Pip value = Y1,000 per lot / USD-JPY · update when the rate moves materially</span>
+  </div>
+  <div class="spec-field" id="spec-doge" style="display:none">
+    <label for="doge-cs">DOGE / lot</label>
+    <input type="number" id="doge-cs" value="100000" step="1000" oninput="recalc(); save();">
+    <label for="doge-max" style="margin-left:4px">Max vol</label>
+    <input type="number" id="doge-max" value="1" step="0.01" oninput="recalc(); save();">
+    <label for="doge-min" style="margin-left:4px">Min vol</label>
+    <input type="number" id="doge-min" value="0.01" step="0.01" oninput="recalc(); save();">
+    <span class="hint">From your MT5 spec: contract size 100,000 · min 0.01 · max 1.00 · step 0.01 · 5 digits</span>
+  </div>
+
+  <div class="sec-label">Direction</div>
+  <div class="dir-row">
+    <button class="dir-btn long-sel" id="d-long" onclick="setDir('long')">▲ Long</button>
+    <button class="dir-btn" id="d-short" onclick="setDir('short')">▼ Short</button>
+  </div>
+
+  <div class="warn-box" id="warn"></div>
+
+  <div class="result">
+    <div class="r-lbl" id="r-lbl">Lot size · 0.30% risk</div>
+    <div class="r-lot" id="r-lot">—</div>
+    <div class="r-sub">standard lots · floored</div>
+    <div class="r-risk" id="r-risk">—</div>
+  </div>
+
+  <div class="mini-table">
+    <div class="mini-row"><span class="lbl" id="m-pip-lbl">Pip value / lot</span><span class="val" id="m-pip">—</span></div>
+    <div class="mini-row"><span class="lbl">SL distance</span><span class="val" id="m-sl">—</span></div>
+    <div class="mini-row"><span class="lbl">SL in price terms</span><span class="val" id="m-price">—</span></div>
+    <div class="mini-row"><span class="lbl">Raw lot (pre-floor)</span><span class="val" id="m-raw">—</span></div>
+    <div class="mini-row"><span class="lbl">Direction</span><span class="val" id="m-dir">Long</span></div>
+  </div>
+  <div class="info-note" id="mkt-note">1 lot = 100 oz · pip = $0.1 tick · $10/pip/lot</div>
+</div>
+
+<div class="footer">ASH&#39;S LOT SIZE CALCULATOR · 0.15% OR 0.30% · SAVED ON THIS DEVICE · WORKS OFFLINE</div>
+</div>
+
+<script>
+var RISK_OPTIONS = [0.15, 0.30];
+
+var MKT = {
+  gold: { slPresets:[100,150,200,300], slUnit:'pips',
+          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
+          note:'1 lot = 100 oz · pip = $0.1 tick · $10/pip/lot',
+          minLot:function(){ return 0.01; },
+          pipVal:function(){ return 10; } },
+  nas:  { slPresets:[80,100,150,250], slUnit:'pips',
+          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
+          note:'pip value = $/point/lot from your MT5 symbol spec',
+          minLot:function(){ return 0.01; },
+          pipVal:function(){ return parseFloat(document.getElementById('nas-ppv').value)||1; } },
+  oil:  { slPresets:[50,80,100,200], slUnit:'pips',
+          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
+          note:'pip value = barrels/lot x $0.01',
+          minLot:function(){ return 0.01; },
+          pipVal:function(){ return (parseFloat(document.getElementById('oil-bpl').value)||1000)*0.01; } },
+  btc:  { slPresets:[300,500,800,1200], slUnit:'$',
+          slLabel:'Stop loss distance ($ of price)', pipLabel:'$ per $1 move / lot',
+          note:'BTC stops are priced in dollars, not pips · $1 move = BTC/lot x $1',
+          minLot:function(){ return parseFloat(document.getElementById('btc-min').value)||0.01; },
+          pipVal:function(){ return parseFloat(document.getElementById('btc-cs').value)||1; } },
+  gbp:  { slPresets:[30,50,80,120], slUnit:'pips',
+          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
+          note:'1 lot = 100,000 GBP · pip = 0.01 JPY = Y1,000/lot · converted at USD/JPY',
+          minLot:function(){ return 0.01; },
+          pipVal:function(){ var r=parseFloat(document.getElementById('gbp-rate').value)||150; return 1000/r; } },
+  doge: { slPresets:[50,100,200,300], slUnit:'points',
+          slLabel:'Stop loss distance (points · 5th decimal)', pipLabel:'$ per point / lot',
+          note:'MT5 spec: 100,000 DOGE/lot, 5 digits · 1 point = 0.00001 = $1.00/lot',
+          maxLot:function(){ return parseFloat(document.getElementById('doge-max').value)||1; },
+          minLot:function(){ return parseFloat(document.getElementById('doge-min').value)||0.01; },
+          pipVal:function(){ return (parseFloat(document.getElementById('doge-cs').value)||100000)*0.00001; } }
+};
+var MARKETS = ['gold','nas','oil','btc','gbp','doge'];
+var DEFAULTS = {
+  mkt:'gold', dir:'long', risk:0.30,
+  sl:{ gold:200, nas:150, oil:100, btc:500, gbp:50, doge:100 },
+  slCustom:{ gold:'', nas:'', oil:'', btc:'', gbp:'', doge:'' }
+};
+var state = JSON.parse(JSON.stringify(DEFAULTS));
+
+function save(){
+  try {
+    localStorage.setItem('rapidLotSingle03', JSON.stringify({
+      state: state,
+      bal: document.getElementById('bal').value,
+      ppv: document.getElementById('nas-ppv').value,
+      bpl: document.getElementById('oil-bpl').value,
+      bcs: document.getElementById('btc-cs').value,
+      bmin: document.getElementById('btc-min').value,
+      gr: document.getElementById('gbp-rate').value,
+      dcs: document.getElementById('doge-cs').value,
+      dmin: document.getElementById('doge-min').value,
+      dmax: document.getElementById('doge-max').value
+    }));
+  } catch(e){}
+}
+function load(){
+  try {
+    var raw = localStorage.getItem('rapidLotSingle03');
+    if(!raw) return;
+    var s = JSON.parse(raw);
+    if(s.state){
+      state = s.state;
+      state.mkt = state.mkt || DEFAULTS.mkt;
+      state.dir = state.dir || DEFAULTS.dir;
+      ['sl','slCustom'].forEach(function(g){
+        if(!state[g]) state[g] = {};
+        MARKETS.forEach(function(m){
+          if(state[g][m] === undefined) state[g][m] = DEFAULTS[g][m];
+        });
+      });
+      if(MARKETS.indexOf(state.mkt) < 0) state.mkt = 'gold';
+      if(RISK_OPTIONS.indexOf(state.risk) < 0) state.risk = DEFAULTS.risk;
+    }
+    if(s.bal) document.getElementById('bal').value = s.bal;
+    if(s.ppv) document.getElementById('nas-ppv').value = s.ppv;
+    if(s.bpl) document.getElementById('oil-bpl').value = s.bpl;
+    if(s.bcs) document.getElementById('btc-cs').value = s.bcs;
+    if(s.bmin) document.getElementById('btc-min').value = s.bmin;
+    if(s.gr) document.getElementById('gbp-rate').value = s.gr;
+    if(s.dcs) document.getElementById('doge-cs').value = s.dcs;
+    if(s.dmin) document.getElementById('doge-min').value = s.dmin;
+    if(s.dmax) document.getElementById('doge-max').value = s.dmax;
+  } catch(e){}
+}
+
+function setMkt(m){
+  state.mkt = m;
+  MARKETS.forEach(function(x){
+    document.getElementById('tab-'+x).className = 'tab' + (x===m ? ' active-'+m : '');
+  });
+  document.getElementById('mkt-wrap').className = 'mkt-'+m;
+  ['nas','oil','btc','gbp','doge'].forEach(function(x){
+    var el = document.getElementById('spec-'+x);
+    if(el) el.style.display = (x===m ? 'flex' : 'none');
+  });
+  document.getElementById('mkt-note').textContent = MKT[m].note;
+  document.getElementById('sl-label').textContent = MKT[m].slLabel;
+  document.getElementById('m-pip-lbl').textContent = MKT[m].pipLabel;
+  buildChips();
+  recalc();
+  save();
+}
+
+function setRisk(r){
+  state.risk = r;
+  markRisk();
+  recalc();
+  save();
+}
+
+function markRisk(){
+  [['risk-015',0.15],['risk-030',0.30]].forEach(function(p){
+    var b = document.getElementById(p[0]);
+    var on = state.risk === p[1];
+    b.className = 'risk-btn' + (on ? ' on' : '');
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+function setDir(d){
+  state.dir = d;
+  document.getElementById('d-long').className = 'dir-btn' + (d==='long' ? ' long-sel' : '');
+  document.getElementById('d-short').className = 'dir-btn' + (d==='short' ? ' short-sel' : '');
+  document.getElementById('m-dir').textContent = d==='long' ? 'Long' : 'Short';
+  save();
+}
+
+function buildChips(){
+  var m = state.mkt;
+  var sc = document.getElementById('sl-chips');
+  sc.innerHTML = '';
+  MKT[m].slPresets.forEach(function(p){
+    var b = document.createElement('button');
+    b.className = 'chip' + (state.sl[m]===p && !state.slCustom[m] ? ' on' : '');
+    b.textContent = p;
+    b.onclick = function(){ state.sl[m]=p; state.slCustom[m]=''; buildChips(); recalc(); save(); };
+    sc.appendChild(b);
+  });
+  var scust = document.createElement('div');
+  scust.className = 'chip custom' + (state.slCustom[m] ? ' on' : '');
+  var si = document.createElement('input');
+  si.id='sl-custom'; si.setAttribute('aria-label','Custom stop loss'); si.setAttribute('inputmode','decimal');
+  si.type='number'; si.step='any'; si.placeholder = (MKT[m].slUnit==='$') ? '$' : ((MKT[m].slUnit==='points') ? 'pts' : 'pips');
+  si.value = state.slCustom[m];
+  si.oninput = function(){
+    state.slCustom[m]=this.value;
+    scust.className = 'chip custom' + (this.value ? ' on' : '');
+    markSlChips(!this.value);
+    recalc(); save();
+  };
+  scust.appendChild(si);
+  sc.appendChild(scust);
+}
+
+function markSlChips(presetActive){
+  var m = state.mkt;
+  var chips = document.getElementById('sl-chips').querySelectorAll('button.chip');
+  chips.forEach(function(c, i){
+    c.className = 'chip' + (presetActive && MKT[m].slPresets[i]===state.sl[m] ? ' on' : '');
+  });
+}
+
+function getSL(){ var m=state.mkt; return state.slCustom[m] ? (parseFloat(state.slCustom[m])||0) : state.sl[m]; }
+
+function recalc(){
+  var m = state.mkt;
+  var pipVal = MKT[m].pipVal();
+  var minLot = MKT[m].minLot();
+  var sl = getSL();
+  var bal = parseFloat(document.getElementById('bal').value)||0;
+
+  var riskAmt = bal * state.risk / 100;
+  document.getElementById('r-lbl').textContent = 'Lot size · ' + state.risk.toFixed(2) + '% risk';
+  var raw = (sl > 0 && pipVal > 0) ? riskAmt / (sl * pipVal) : 0;
+  var step = (minLot >= 0.1) ? 0.1 : 0.01;
+  var lot = Math.round(Math.floor(raw / step) * step * 1000) / 1000;
+  var maxLot = MKT[m].maxLot ? MKT[m].maxLot() : Infinity;
+  var capped = lot > maxLot;
+  if(capped) lot = maxLot;
+  var slCost = lot * sl * pipVal;
+  var dec = (minLot >= 0.1) ? 1 : 2;
+
+  document.getElementById('r-lot').textContent = lot >= minLot ? lot.toFixed(dec) : '< ' + minLot;
+  document.getElementById('r-risk').textContent = '$' + riskAmt.toFixed(2) + ' at risk · SL cost $' + slCost.toFixed(2);
+  document.getElementById('m-pip').textContent = '$' + pipVal.toFixed(2);
+  document.getElementById('m-sl').textContent = (MKT[m].slUnit==='$') ? ('$' + sl) : ((MKT[m].slUnit==='points') ? (sl + ' pts') : (sl + ' pips'));
+  document.getElementById('m-raw').textContent = raw.toFixed(4);
+  var pr = document.getElementById('m-price');
+  if(pr) pr.textContent = (MKT[m].slUnit==='points') ? (sl*0.00001).toFixed(5) : '—';
+
+  var ws = [];
+  if(sl > 0 && lot < minLot) ws.push('Below the minimum lot of ' + minLot + ' — increase balance or tighten the stop.');
+  if(capped) ws.push('Capped at the ' + maxLot + ' lot maximum volume. The full size is ' + raw.toFixed(2) + ' lots — split it across ' + Math.ceil(raw/maxLot) + ' orders to take the intended risk.');
+  if((m === 'btc' || m === 'doge') && raw > 0 && raw < minLot * 2) ws.push('Lot is close to minimum — crypto lot granularity is coarse, actual risk may differ from target.');
+  var w = document.getElementById('warn');
+  if(ws.length){ w.textContent = ws.join(' '); w.style.display='block'; } else { w.style.display='none'; }
+}
+
+load();
+markRisk();
+setMkt(state.mkt);
+setDir(state.dir);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+
+</body>
+</html>
