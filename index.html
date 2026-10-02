@@ -6,430 +6,1286 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ash's Lot Size">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#0d0d0d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon-32.png">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0d0d0d">
 <title>Ash's Lot Size Calculator</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { overscroll-behavior:none; -webkit-text-size-adjust:100%; }
-button { -webkit-tap-highlight-color:transparent; -webkit-user-select:none; touch-action:manipulation; }
+/* Layout: one narrow column, operated top to bottom: balance, risk, market, stop, result. */
 :root {
-  --bg: #0d0d0d; --bg2: #141414; --bg3: #1c1c1c;
-  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.14);
-  --text: #efefef; --text2: #888; --text3: #4a4a4a; --mono: 'Courier New', monospace;
-  --gold-l: #f0b429; --gold-bg: rgba(201,146,10,0.1); --gold-bd: rgba(201,146,10,0.35);
-  --nas-l: #60a5fa;  --nas-bg: rgba(59,130,246,0.1);  --nas-bd: rgba(59,130,246,0.35);
-  --oil-l: #f87849;  --oil-bg: rgba(224,69,26,0.1);   --oil-bd: rgba(224,69,26,0.35);
-  --btc-l: #ffb454;  --btc-bg: rgba(247,147,26,0.1);  --btc-bd: rgba(247,147,26,0.4);
-  --gbp-l: #c084fc;  --gbp-bg: rgba(168,85,247,0.1);  --gbp-bd: rgba(168,85,247,0.4);
-  --doge-l: #22d3ee; --doge-bg: rgba(34,211,238,0.1); --doge-bd: rgba(34,211,238,0.4);
-  --green: #4ade80; --red: #f87171;
-  --focus: #8ab4ff;
+  --bg: #0d0d0d; --s1: #151515; --s2: #1d1d1d; --s3: #262626;
+  --line: rgba(255,255,255,.08); --line2: rgba(255,255,255,.16);
+  --t1: #efefef; --t2: #a3a3a3; --t3: #6f6f6f;
+  --green: #4ade80; --red: #f87171; --amber: #fbbf24; --focus: #8ab4ff;
+  --mc: #f0b429;                                   /* current market colour */
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
 }
-body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); display:flex; justify-content:center; align-items:flex-start; padding-block:max(1.6rem, env(safe-area-inset-top)) max(3rem, env(safe-area-inset-bottom)); padding-inline:max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
-.app { width:100%; max-width:460px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { overscroll-behavior: none; -webkit-text-size-adjust: 100%; background: var(--bg); }
+body { font-family: var(--sans); color: var(--t1); font-size: 14px; line-height: 1.4;
+  padding-block: max(18px, env(safe-area-inset-top)) max(40px, env(safe-area-inset-bottom));
+  padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+input, select { font: inherit; font-size: 16px; color: var(--t1); }
+.app { max-width: 480px; margin: 0 auto; display: grid; gap: 14px; }
 
-.top-header { text-align:center; margin-bottom:1.2rem; }
-.top-header h1 { font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--text2); font-weight:400; }
-.risk-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:1.1rem; }
-.risk-btn { border:.5px solid var(--border2); border-radius:8px; background:var(--bg2); color:var(--text2); font-family:var(--mono); font-size:17px; font-weight:700; padding:11px 6px 9px; cursor:pointer; transition:all .12s; user-select:none; }
-.risk-btn small { display:block; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-size:9.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-top:3px; }
-.risk-btn.on { border-color:rgba(74,222,128,.5); background:rgba(74,222,128,.1); color:var(--green); }
-.risk-btn.on small { color:var(--green); opacity:.75; }
+/* header */
+.hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hdr h1 { font-size: 12.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--t2); }
+.hdr-r { display: flex; gap: 8px; align-items: center; }
+.pill { font-family: var(--mono); font-size: 11px; color: var(--t2); border: .5px solid var(--line2); border-radius: 999px; padding: 5px 10px; background: var(--s1); }
+.pill.warn { color: var(--amber); border-color: rgba(251,191,36,.4); }
+.icon-btn { width: 34px; height: 34px; border-radius: 9px; border: .5px solid var(--line2); background: var(--s1); display: grid; place-items: center; color: var(--t2); }
+.icon-btn svg { width: 17px; height: 17px; }
 
-.bal-card { background:var(--bg2); border:.5px solid var(--border2); border-radius:9px; padding:11px 14px; margin-bottom:1.1rem; }
-.bal-card label { font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--text2); font-weight:600; display:block; margin-bottom:6px; }
-.bal-card input { background:var(--bg3); border:.5px solid var(--border); border-radius:6px; color:var(--text); font-size:19px; font-family:var(--mono); padding:9px 12px; outline:none; width:100%; }
-.bal-card input:focus { border-color:var(--border2); }
+/* generic */
+.lbl { font-size: 10.5px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--t3); }
+.row-lbl { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 7px; }
+.row-lbl .aside { font-family: var(--mono); font-size: 11.5px; color: var(--t2); text-align: right; }
+.card { background: var(--s1); border: .5px solid var(--line2); border-radius: 12px; padding: 12px 14px; }
+.field { background: var(--s2); border: .5px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; outline: none; font-family: var(--mono); }
+.field:focus { border-color: var(--line2); }
+.big-field { font-size: 21px; padding: 10px 12px; }
 
-.tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:1rem; }
-.tab { border:.5px solid var(--border2); border-radius:8px; background:var(--bg2); padding:10px 4px; font:inherit; color:inherit; cursor:pointer; text-align:center; transition:all .12s; outline:none; user-select:none; }
-.tab .tab-name { font-size:12px; font-weight:600; letter-spacing:.05em; display:block; color:var(--text2); }
-.tab .tab-pair { font-size:9.5px; color:var(--text3); display:block; margin-top:2px; }
-.tab.active-gold { border-color:var(--gold-bd); background:var(--gold-bg); }
-.tab.active-gold .tab-name { color:var(--gold-l); }
-.tab.active-nas { border-color:var(--nas-bd); background:var(--nas-bg); }
-.tab.active-nas .tab-name { color:var(--nas-l); }
-.tab.active-oil { border-color:var(--oil-bd); background:var(--oil-bg); }
-.tab.active-oil .tab-name { color:var(--oil-l); }
-.tab.active-btc { border-color:var(--btc-bd); background:var(--btc-bg); }
-.tab.active-btc .tab-name { color:var(--btc-l); }
-.tab.active-gbp { border-color:var(--gbp-bd); background:var(--gbp-bg); }
-.tab.active-gbp .tab-name { color:var(--gbp-l); }
-.tab.active-doge { border-color:var(--doge-bd); background:var(--doge-bg); }
-.tab.active-doge .tab-name { color:var(--doge-l); }
+/* balance */
+.bal { display: flex; align-items: center; gap: 10px; }
+.bal .ccy { font-family: var(--mono); color: var(--t2); font-size: 13px; }
+.bal-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 14px; }
+.bal-row .lbl { flex: none; }
+.bal-row .field { flex: 1; min-width: 0; font-size: 19px; padding: 7px 10px; }
+#sl-chips.g4 { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0,1fr)); }
+.txt-btn { font-size: 11.5px; color: var(--t2); text-decoration: underline; text-underline-offset: 2px; padding: 4px 0 4px 8px; }
+.sl-editor { background: var(--s1); border: .5px solid var(--line2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; margin-top: 8px; }
+.sl-editor .field { font-size: 16px; padding: 8px 10px; }
 
-.sec-label { font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--text3); font-weight:600; margin-bottom:7px; }
+/* segmented / chips */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.chip { border: .5px solid var(--line2); border-radius: 8px; background: var(--s1); padding: 11px 4px; font-family: var(--mono); font-size: 14px; color: var(--t2); text-align: center; min-width: 0; transition: background .12s, color .12s, border-color .12s; }
+.chip:active { transform: scale(.97); }
+.chip small { display: block; font-family: var(--sans); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--t3); margin-top: 2px; }
+.chip.on { background: var(--mc); border-color: var(--mc); color: #0d0d0d; font-weight: 700; }
+.chip.on small { color: rgba(0,0,0,.6); }
+.chip.risk.on { background: rgba(74,222,128,.12); border-color: rgba(74,222,128,.55); color: var(--green); }
+.chip.risk.on small { color: var(--green); opacity: .75; }
+.chip.cust { padding: 0; display: flex; align-items: stretch; }
+.chip.cust input { width: 100%; min-width: 0; background: transparent; border: 0; outline: none; font-family: var(--mono); text-align: center; padding: 10px 2px; color: inherit; }
+.chip.cust.on input { color: #0d0d0d; font-weight: 700; }
+.chip.cust input::placeholder { color: var(--t3); font-size: 13px; }
+.chip.cust.on input::placeholder { color: rgba(0,0,0,.45); }
+.chip.rc { display: block; padding: 10px 4px 11px; cursor: text; }
+.rc-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: baseline; }
+.rc-row input { width: 100%; min-width: 0; background: transparent; border: 0; outline: none; padding: 0; font-family: var(--mono); font-size: 16px; line-height: 1.2; text-align: right; color: var(--t2); }
+.rc-row input::placeholder { color: var(--t3); }
+.rc-pct { font-family: var(--mono); font-size: 14px; color: var(--t3); text-align: left; padding-left: 1px; }
+.chip.rc.on input, .chip.rc.on .rc-pct { color: var(--green); font-weight: 700; }
+.chip.rc.hi { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.6); }
+.chip.rc.hi input, .chip.rc.hi .rc-pct, .chip.rc.hi small { color: var(--amber); opacity: 1; }
+.chip.rc:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rc-row input:focus-visible { outline: none; }
+.rc-row.usd input { text-align: left; }
+.rc-row.usd .rc-pct { text-align: right; padding: 0 1px 0 0; }
+@media (max-width: 360px) { .rc-row input { font-size: 16px; } .chip.risk { font-size: 13px; padding-inline: 2px; } .chip small { letter-spacing: .06em; } }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tab { border: .5px solid var(--line2); border-radius: 9px; background: var(--s1); padding: 10px 4px; text-align: center; min-width: 0; }
+.tab b { display: block; font-size: 12.5px; letter-spacing: .05em; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab span { display: block; font-size: 10px; color: var(--t3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab.on { border-color: color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 12%, transparent); }
+.tab.on b { color: var(--c); }
+.more { margin-top: 6px; width: 100%; border: .5px dashed var(--line2); border-radius: 9px; padding: 9px; color: var(--t2); font-size: 12.5px; }
+.dir { border: .5px solid var(--line); border-radius: 8px; background: var(--s1); padding: 10px; font-size: 13px; color: var(--t3); }
+.dir.long.on { border-color: rgba(74,222,128,.5); background: rgba(74,222,128,.09); color: var(--green); font-weight: 600; }
+.dir.short.on { border-color: rgba(248,113,113,.5); background: rgba(248,113,113,.09); color: var(--red); font-weight: 600; }
+.mode { border: .5px solid var(--line); border-radius: 8px; background: var(--s1); padding: 9px; font-size: 12.5px; color: var(--t3); }
+.mode.on { border-color: var(--line2); background: var(--s3); color: var(--t1); font-weight: 600; }
+.unit-note { font-family: var(--mono); font-size: 11px; color: var(--t3); margin-top: 7px; }
+.prices { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.prices label { display: grid; gap: 4px; min-width: 0; }
+.prices .lbl { font-size: 9.5px; }
+.prices .field { padding: 9px 8px; font-size: 16px; }
+.opt { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px; align-items: end; }
+.opt label { display: grid; gap: 4px; min-width: 0; }
+.stack { display: grid; gap: 8px; }
 
-.chip-row { display:grid; gap:6px; margin-bottom:13px; grid-template-columns:repeat(5,1fr); }
-.chip { border:.5px solid var(--border2); border-radius:7px; background:var(--bg2); padding:11px 2px; min-width:0; font-family:var(--mono); font-size:13.5px; font-family:var(--mono); cursor:pointer; color:var(--text2); text-align:center; transition:all .1s; user-select:none; }
-.chip:active { transform:scale(.96); }
-.chip.on { color:var(--bg); font-weight:700; }
-.mkt-gold .chip.on { background:var(--gold-l); border-color:var(--gold-l); }
-.mkt-nas .chip.on { background:var(--nas-l); border-color:var(--nas-l); }
-.mkt-oil .chip.on { background:var(--oil-l); border-color:var(--oil-l); }
-.mkt-btc .chip.on { background:var(--btc-l); border-color:var(--btc-l); }
-.mkt-gbp .chip.on { background:var(--gbp-l); border-color:var(--gbp-l); }
-.mkt-doge .chip.on { background:var(--doge-l); border-color:var(--doge-l); }
-.chip.custom { font-size:11px; }
-.chip input { width:100%; background:transparent; border:none; outline:none; color:inherit; font-family:var(--mono); font-size:16px; text-align:center; padding:0; }
-.chip.on input { color:var(--bg); font-weight:700; }
-.chip.on input::placeholder { color:rgba(0,0,0,0.5); }
-.chip input::placeholder { color:var(--text3); }
+/* result */
+.result { border-radius: 14px; border: .5px solid color-mix(in srgb, var(--mc) 40%, transparent); background: color-mix(in srgb, var(--mc) 6%, var(--s1)); padding: 16px 16px 14px; text-align: center; }
+.result .r-top { font-size: 10.5px; letter-spacing: .15em; text-transform: uppercase; color: var(--t2); font-weight: 600; }
+.lot-btn { display: block; width: 100%; margin: 6px 0 2px; }
+.lot { font-family: var(--mono); font-size: 64px; line-height: 1; font-weight: 700; color: var(--mc); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.lot.zero { color: var(--red); font-size: 40px; }
+.lot-unit { font-family: var(--mono); font-size: 11px; color: var(--t3); }
+.r-risk { font-family: var(--mono); font-size: 13px; color: var(--t1); margin-top: 8px; }
+.r-risk em { font-style: normal; color: var(--t2); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: .5px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 14px; text-align: left; }
+.stat { background: var(--s1); padding: 9px 11px; min-width: 0; }
+.stat .k { font-size: 9.5px; letter-spacing: .11em; text-transform: uppercase; color: var(--t3); font-weight: 600; }
+.stat .v { font-family: var(--mono); font-size: 15px; color: var(--t1); margin-top: 3px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat .s { font-family: var(--mono); font-size: 10.5px; color: var(--t2); margin-top: 1px; overflow-wrap: anywhere; }
+.conv { font-family: var(--mono); font-size: 10.5px; color: var(--t3); margin-top: 10px; }
+.msgs { display: grid; gap: 6px; }
+.msg { border-radius: 8px; padding: 9px 12px; font-size: 12.5px; line-height: 1.45; text-align: left; }
+.msg.err, .msg.warn { background: rgba(248,113,113,.08); border: .5px solid rgba(248,113,113,.32); color: var(--red); }
+.msg.note { background: var(--s1); border: .5px solid var(--line); color: var(--t2); }
+.msg.spec { background: rgba(251,191,36,.07); border: .5px solid rgba(251,191,36,.35); color: var(--amber); }
+.msg.spec button { text-decoration: underline; color: inherit; font-weight: 600; }
 
-.dir-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:15px; }
-.dir-btn { border:.5px solid var(--border); border-radius:7px; padding:9px; font-family:inherit; font-size:12.5px; cursor:pointer; background:var(--bg2); color:var(--text3); transition:all .12s; user-select:none; }
-.dir-btn.long-sel { border-color:rgba(74,222,128,.45); background:rgba(74,222,128,.09); color:var(--green); font-weight:600; }
-.dir-btn.short-sel { border-color:rgba(248,113,113,.45); background:rgba(248,113,113,.09); color:var(--red); font-weight:600; }
+/* details */
+details.card { padding: 0; }
+details.card > summary { list-style: none; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::after { content: '+'; font-family: var(--mono); color: var(--t3); font-size: 16px; }
+details.card[open] > summary::after { content: '–'; }
+.badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.ok { color: var(--green); background: rgba(74,222,128,.1); }
+.badge.chk { color: var(--amber); background: rgba(251,191,36,.1); }
+.det-body { padding: 0 14px 14px; display: grid; gap: 10px; }
+.grid2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+.grid2 label, .det-body > label { display: grid; gap: 4px; min-width: 0; }
+.grid2 .field, .det-body .field { font-size: 16px; padding: 8px 10px; }
+select.field { appearance: none; -webkit-appearance: none; font-family: var(--sans); }
+.help { font-size: 11.5px; color: var(--t2); line-height: 1.5; }
+.btn { border: .5px solid var(--line2); border-radius: 8px; background: var(--s2); padding: 10px 12px; font-size: 13px; color: var(--t1); }
+.btn.primary { border-color: rgba(74,222,128,.5); background: rgba(74,222,128,.1); color: var(--green); font-weight: 600; }
+.btn.danger { border-color: rgba(248,113,113,.45); color: var(--red); }
+.check { display: flex !important; grid-template-columns: none; align-items: center; gap: 10px; font-size: 13px; color: var(--t1); }
+.check input { width: 20px; height: 20px; accent-color: var(--green); }
+.foot { text-align: center; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--t3); padding-top: 6px; }
 
-.warn-box { background:rgba(248,113,113,.08); border:.5px solid rgba(248,113,113,.3); border-radius:7px; padding:9px 12px; font-size:12px; line-height:1.45; color:var(--red); margin-bottom:11px; display:none; }
+/* sheets */
+.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.62); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+.panel { width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; background: var(--s1); border: .5px solid var(--line2); border-bottom: 0; border-radius: 16px 16px 0 0;
+  padding: 14px 16px max(20px, env(safe-area-inset-bottom)); display: grid; gap: 12px; align-content: start; }
+.panel-h { display: flex; justify-content: space-between; align-items: center; position: sticky; top: -14px; background: var(--s1); padding: 4px 0 6px; z-index: 1; }
+.panel-h h2 { font-size: 15px; font-weight: 600; }
+.grp { display: grid; gap: 4px; }
+.grp h3 { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--t3); margin: 6px 0 2px; }
+.mrow { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; background: var(--s2); border: .5px solid var(--line); }
+.mrow.cur { border-color: var(--line2); background: var(--s3); }
+.mrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.mrow .nm { flex: 1; min-width: 0; text-align: left; }
+.mrow .nm b { font-size: 13.5px; }
+.mrow .nm span { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.star { width: 34px; height: 34px; border-radius: 8px; color: var(--t3); font-size: 18px; flex: none; }
+.star.on { color: var(--amber); }
+.rate-row { display: grid; grid-template-columns: 74px minmax(0,1fr) minmax(0,1fr); gap: 8px; align-items: center; }
+.rate-row .cur { font-family: var(--mono); font-size: 13px; color: var(--t1); }
+.rate-row .live { font-family: var(--mono); font-size: 13px; color: var(--t2); }
+.rate-row .field { padding: 7px 9px; font-size: 16px; }
+/* dock: the lot size stays on screen while the result card is scrolled out of view */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; justify-content: center;
+  padding: 10px max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(13,13,13,.94); border-top: .5px solid var(--line2); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.dock-in { width: 100%; max-width: 480px; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
+.dock .d-l { min-width: 0; }
+.dock .d-l b { display: block; font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--t2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock .d-l span { display: block; font-family: var(--mono); font-size: 12px; color: var(--t1); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock .d-lot { font-family: var(--mono); font-size: 34px; line-height: 1; font-weight: 700; color: var(--mc); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dock .d-lot small { font-size: 11px; font-weight: 500; color: var(--t3); margin-left: 5px; }
+.dock .d-lot.zero { color: var(--red); }
+.toast { position: fixed; left: 50%; bottom: max(84px, calc(env(safe-area-inset-bottom) + 70px)); transform: translateX(-50%); background: var(--s3); border: .5px solid var(--line2); color: var(--t1); padding: 9px 14px; border-radius: 999px; font-size: 13px; z-index: 30; }
 
-.result { border-radius:12px; padding:22px 20px 18px; border:.5px solid var(--border2); background:var(--bg2); text-align:center; margin-bottom:10px; }
-.result .r-lbl { font-size:9.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--text3); font-weight:600; margin-bottom:10px; }
-.result .r-lot { font-size:66px; font-family:var(--mono); line-height:.95; font-weight:700; letter-spacing:-.02em; }
-.mkt-gold .r-lot { color:var(--gold-l); }
-.mkt-nas .r-lot { color:var(--nas-l); }
-.mkt-oil .r-lot { color:var(--oil-l); }
-.mkt-btc .r-lot { color:var(--btc-l); }
-.mkt-gbp .r-lot { color:var(--gbp-l); }
-.mkt-doge .r-lot { color:var(--doge-l); }
-.result .r-sub { font-size:10.5px; color:var(--text3); font-family:var(--mono); margin-top:9px; }
-.result .r-risk { font-size:12.5px; color:var(--text2); font-family:var(--mono); margin-top:5px; }
-
-.mini-table { background:var(--bg2); border:.5px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:8px; }
-.mini-row { display:flex; justify-content:space-between; gap:12px; padding:7px 13px; border-bottom:.5px solid var(--border); font-size:11.5px; }
-.mini-row:last-child { border-bottom:none; }
-.mini-row .lbl { color:var(--text2); }
-.mini-row .val { color:var(--text); font-family:var(--mono); }
-.info-note { font-size:10px; color:var(--text3); font-family:var(--mono); text-align:center; margin-top:7px; letter-spacing:.04em; }
-.footer { margin-top:1.7rem; padding-top:.9rem; border-top:.5px solid var(--border); font-size:10px; color:var(--text3); text-align:center; font-family:var(--mono); letter-spacing:.08em; }
-
-.spec-field { display:flex; align-items:center; gap:8px; margin-bottom:13px; flex-wrap:wrap; }
-.spec-field label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); font-weight:600; }
-.spec-field input { background:var(--bg3); border:.5px solid var(--border); border-radius:5px; color:var(--text); font-size:16px; font-family:var(--mono); padding:5px 8px; outline:none; width:90px; }
-.spec-field .hint { font-size:10px; color:var(--text3); font-family:var(--mono); width:100%; }
-
-button:focus-visible, input:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
-.chip input:focus-visible { outline:none; }
-.chip.custom:focus-within { outline:2px solid var(--focus); outline-offset:2px; }
-@media (prefers-reduced-motion: reduce) { .tab, .chip, .dir-btn, .risk-btn { transition:none; } .chip:active { transform:none; } }
-@media (max-width:400px) {
-  .result .r-lot { font-size:54px; }
-  .chip { font-size:12.5px; }
-}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.chip.cust:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.chip.cust input:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } .chip:active { transform: none; } }
+@media (max-width: 380px) { .lot { font-size: 54px; } .chip { font-size: 13px; } .prices { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
 
-<div class="top-header">
-  <h1>Ash's Lot Size Calculator</h1>
+  <header class="hdr">
+    <h1>Ash's Lot Size Calculator</h1>
+    <div class="hdr-r">
+      <button class="pill" id="rate-pill" type="button">Rates</button>
+      <button class="icon-btn" id="open-settings" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="card bal-row">
+    <label class="lbl" for="bal">Balance</label>
+    <input class="field" id="bal" type="number" inputmode="decimal" step="any" placeholder="10000">
+    <span class="ccy" id="bal-ccy">USD</span>
+  </section>
+
+  <section>
+    <div class="row-lbl"><span class="lbl" id="risk-lbl">Risk per trade</span><span class="aside"><span id="risk-money"></span> <span id="risk-scope"></span></span></div>
+    <div class="seg" role="group" aria-labelledby="risk-lbl">
+      <button class="chip risk" id="risk-015" type="button" aria-pressed="false">0.15%<small>Reduced</small></button>
+      <button class="chip risk" id="risk-030" type="button" aria-pressed="false">0.30%<small>Standard</small></button>
+      <label class="chip risk rc" id="risk-cust-wrap"><span class="rc-row"><input id="risk-cust" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="–" aria-label="Custom risk percent"><span class="rc-pct">%</span></span><small>Custom</small></label>
+      <label class="chip risk rc" id="risk-usd-wrap"><span class="rc-row usd"><span class="rc-pct" id="risk-usd-sym">$</span><input id="risk-usd" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="–" aria-label="Fixed amount to risk"></span><small id="risk-usd-lbl">Fixed $</small></label>
+    </div>
+  </section>
+
+  <section>
+    <div class="row-lbl"><span class="lbl">Market</span><span class="aside" id="mkt-sub"></span></div>
+    <div class="tabs" id="favs"></div>
+    <button class="more" id="open-markets" type="button">All markets: forex, metals, indices, energy, crypto, futures</button>
+  </section>
+
+  <section class="stack">
+    <div class="row-lbl" style="margin-bottom:0"><span class="lbl">Stop loss</span></div>
+    <div class="seg">
+      <button class="mode" id="mode-dist" type="button">Stop distance</button>
+      <button class="mode" id="mode-price" type="button">Entry &amp; stop prices</button>
+    </div>
+
+    <div id="dist-block" class="stack">
+      <div>
+        <div class="row-lbl"><span class="lbl" id="sl-lbl">Distance</span><button class="txt-btn" id="sl-edit" type="button" aria-expanded="false">Edit stops</button></div>
+        <div class="seg" id="sl-chips"></div>
+        <div class="sl-editor" id="sl-editor" hidden>
+          <label class="grp" for="sl-ed-in"><span class="lbl" id="sl-ed-lbl">Your stop buttons</span></label>
+          <input class="field" id="sl-ed-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+          <p class="help">Up to 7 distances, separated by spaces or commas. They are saved for this market only.</p>
+          <div class="seg"><button class="btn" id="sl-ed-reset" type="button">Back to default</button><button class="btn primary" id="sl-ed-save" type="button">Save stops</button></div>
+        </div>
+        <div class="unit-note" id="unit-note"></div>
+      </div>
+      <div class="seg">
+        <button class="dir long" id="d-long" type="button">▲ Long</button>
+        <button class="dir short" id="d-short" type="button">▼ Short</button>
+      </div>
+      <div class="opt">
+        <label><span class="lbl">Entry price (optional)</span><input class="field" id="entry-d" type="number" inputmode="decimal" step="any" placeholder="price"></label>
+        <label><span class="lbl">Take profit</span>
+          <select class="field" id="tp-r">
+            <option value="0">None</option><option value="1">1R</option><option value="1.5">1.5R</option>
+            <option value="2">2R</option><option value="2.5">2.5R</option><option value="3">3R</option><option value="4">4R</option><option value="5">5R</option>
+          </select></label>
+      </div>
+    </div>
+
+    <div id="price-block" class="stack" hidden>
+      <div class="prices">
+        <label><span class="lbl">Entry</span><input class="field" id="entry-p" type="number" inputmode="decimal" step="any"></label>
+        <label><span class="lbl">Stop loss</span><input class="field" id="stop-p" type="number" inputmode="decimal" step="any"></label>
+        <label><span class="lbl">Take profit</span><input class="field" id="tp-p" type="number" inputmode="decimal" step="any" placeholder="optional"></label>
+      </div>
+      <div class="unit-note" id="price-note"></div>
+    </div>
+  </section>
+
+  <section class="result" id="result" aria-live="polite">
+    <div class="r-top" id="r-top">Lot size</div>
+    <button class="lot-btn" id="lot-btn" type="button" aria-label="Copy lot size"><div class="lot" id="lot">—</div></button>
+    <div class="lot-unit" id="lot-unit">lots · tap to copy</div>
+    <div class="r-risk" id="r-risk"></div>
+    <div class="stats" id="stats"></div>
+    <div class="conv" id="conv"></div>
+  </section>
+
+  <div class="msgs" id="msgs"></div>
+
+  <details class="card" id="spec-card">
+    <summary><span class="lbl" style="color:var(--t2)">Contract spec · <span id="spec-name"></span></span><span class="badge" id="spec-badge"></span></summary>
+    <div class="det-body" id="spec-body"></div>
+  </details>
+
+  <details class="card" id="adv-card">
+    <summary><span class="lbl" style="color:var(--t2)">Spread</span><span></span></summary>
+    <div class="det-body">
+      <div class="grid2">
+        <label><span class="lbl" id="spread-lbl">Spread to add</span><input class="field" id="spread" type="number" inputmode="decimal" step="any" placeholder="0"></label>
+      </div>
+      <p class="help">MT5 stops trigger on the bid for longs and the ask for shorts. If you measured your stop on the bid chart, add the spread so the size still covers the real exit.</p>
+    </div>
+  </details>
+
+  <div class="foot">Saved on this device · works offline · MT5 profit formulas</div>
 </div>
 
-<div class="bal-card">
-  <label for="bal">Account balance</label>
-  <input type="number" inputmode="decimal" id="bal" value="10000" oninput="recalc(); save();" placeholder="Balance $">
+<div class="sheet" id="markets-sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="mk-h">
+    <div class="panel-h"><h2 id="mk-h">All markets</h2><button class="btn" type="button" data-close="markets-sheet">Done</button></div>
+    <input class="field" id="mk-search" type="search" placeholder="Search EURUSD, gold, NQ…" autocomplete="off">
+    <p class="help">Tap a market to use it. Star up to 9 to keep them in your quick tabs.</p>
+    <div id="mk-list" class="stack"></div>
+  </div>
 </div>
 
-<div class="sec-label" id="risk-label">Risk per trade</div>
-<div class="risk-row" role="group" aria-labelledby="risk-label">
-  <button class="risk-btn" id="risk-015" onclick="setRisk(0.15)" aria-pressed="false">0.15%<small>Reduced</small></button>
-  <button class="risk-btn on" id="risk-030" onclick="setRisk(0.30)" aria-pressed="true">0.30%<small>Standard</small></button>
+<div class="sheet" id="settings-sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="st-h">
+    <div class="panel-h"><h2 id="st-h">Settings</h2><button class="btn" type="button" data-close="settings-sheet">Done</button></div>
+    <label class="grp"><span class="lbl">Account currency</span>
+      <select class="field" id="acct">
+        <option>USD</option><option>EUR</option><option>GBP</option><option>CAD</option><option>AUD</option><option>CHF</option><option>NZD</option><option>JPY</option>
+      </select></label>
+    <div class="grp">
+      <span class="lbl">Exchange rates (per 1 USD)</span>
+      <p class="help" id="rates-status"></p>
+      <div id="rates-list" class="stack"></div>
+      <button class="btn" id="rates-refresh" type="button">Update rates now</button>
+      <p class="help">Used to convert profit currencies into your account currency, for example yen on GBPJPY or euros on GER40. Rates are official daily reference rates. Type a value in the right-hand box to override one; clear it to go back to the live rate.</p>
+    </div>
+    <div class="grp">
+      <span class="lbl">Reset</span>
+      <button class="btn danger" id="reset-btn" type="button">Reset all settings and specs</button>
+      <div id="reset-confirm" hidden class="stack">
+        <p class="help">This clears your balance, favourites, risk choices and every contract spec you edited.</p>
+        <div class="seg"><button class="btn" id="reset-no" type="button">Keep everything</button><button class="btn danger" id="reset-yes" type="button">Yes, reset</button></div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="tabs">
-  <button class="tab active-gold" id="tab-gold" onclick="setMkt('gold')"><span class="tab-name">GOLD</span><span class="tab-pair">XAU/USD</span></button>
-  <button class="tab" id="tab-nas" onclick="setMkt('nas')"><span class="tab-name">NAS100</span><span class="tab-pair">US Tech</span></button>
-  <button class="tab" id="tab-oil" onclick="setMkt('oil')"><span class="tab-name">CRUDE</span><span class="tab-pair">US Oil</span></button>
-  <button class="tab" id="tab-btc" onclick="setMkt('btc')"><span class="tab-name">BTC</span><span class="tab-pair">BTC/USD</span></button>
-  <button class="tab" id="tab-gbp" onclick="setMkt('gbp')"><span class="tab-name">GBPJPY</span><span class="tab-pair">Pound-Yen</span></button>
-  <button class="tab" id="tab-doge" onclick="setMkt('doge')"><span class="tab-name">DOGE</span><span class="tab-pair">DOGE/USD</span></button>
-</div>
+<button class="dock" id="dock" type="button" hidden aria-label="Copy lot size">
+  <span class="dock-in"><span class="d-l"><b id="dock-top"></b><span id="dock-sub"></span></span><span class="d-lot" id="dock-lot">—</span></span>
+</button>
 
-<div id="mkt-wrap" class="mkt-gold">
-
-  <div class="sec-label" id="sl-label">Stop loss distance (pips)</div>
-  <div class="chip-row" id="sl-chips"></div>
-
-  <div class="spec-field" id="spec-nas" style="display:none">
-    <label for="nas-ppv">$ / point / lot</label>
-    <input type="number" id="nas-ppv" value="1" step="0.5" oninput="recalc(); save();">
-    <span class="hint">Most brokers $1 · some use $2 or $20 — check MT5 Symbol Spec</span>
-  </div>
-  <div class="spec-field" id="spec-oil" style="display:none">
-    <label for="oil-bpl">Barrels / lot</label>
-    <input type="number" id="oil-bpl" value="1000" step="100" oninput="recalc(); save();">
-    <span class="hint">Standard 1,000 · some brokers use 100</span>
-  </div>
-  <div class="spec-field" id="spec-btc" style="display:none">
-    <label for="btc-cs">BTC / lot</label>
-    <input type="number" id="btc-cs" value="1" step="0.1" oninput="recalc(); save();">
-    <label for="btc-min" style="margin-left:4px">Min lot</label>
-    <input type="number" id="btc-min" value="0.01" step="0.01" oninput="recalc(); save();">
-    <span class="hint">Most brokers 1 BTC/lot · min lot often 0.01, some 0.10 — check MT5 Symbol Spec</span>
-  </div>
-  <div class="spec-field" id="spec-gbp" style="display:none">
-    <label for="gbp-rate">USD/JPY rate</label>
-    <input type="number" id="gbp-rate" value="150" step="0.5" oninput="recalc(); save();">
-    <span class="hint">Pip value = Y1,000 per lot / USD-JPY · update when the rate moves materially</span>
-  </div>
-  <div class="spec-field" id="spec-doge" style="display:none">
-    <label for="doge-cs">DOGE / lot</label>
-    <input type="number" id="doge-cs" value="100000" step="1000" oninput="recalc(); save();">
-    <label for="doge-max" style="margin-left:4px">Max vol</label>
-    <input type="number" id="doge-max" value="1" step="0.01" oninput="recalc(); save();">
-    <label for="doge-min" style="margin-left:4px">Min vol</label>
-    <input type="number" id="doge-min" value="0.01" step="0.01" oninput="recalc(); save();">
-    <span class="hint">From your MT5 spec: contract size 100,000 · min 0.01 · max 1.00 · step 0.01 · 5 digits</span>
-  </div>
-
-  <div class="sec-label">Direction</div>
-  <div class="dir-row">
-    <button class="dir-btn long-sel" id="d-long" onclick="setDir('long')">▲ Long</button>
-    <button class="dir-btn" id="d-short" onclick="setDir('short')">▼ Short</button>
-  </div>
-
-  <div class="warn-box" id="warn"></div>
-
-  <div class="result">
-    <div class="r-lbl" id="r-lbl">Lot size · 0.30% risk</div>
-    <div class="r-lot" id="r-lot">—</div>
-    <div class="r-sub">standard lots · floored</div>
-    <div class="r-risk" id="r-risk">—</div>
-  </div>
-
-  <div class="mini-table">
-    <div class="mini-row"><span class="lbl" id="m-pip-lbl">Pip value / lot</span><span class="val" id="m-pip">—</span></div>
-    <div class="mini-row"><span class="lbl">SL distance</span><span class="val" id="m-sl">—</span></div>
-    <div class="mini-row"><span class="lbl">SL in price terms</span><span class="val" id="m-price">—</span></div>
-    <div class="mini-row"><span class="lbl">Raw lot (pre-floor)</span><span class="val" id="m-raw">—</span></div>
-    <div class="mini-row"><span class="lbl">Direction</span><span class="val" id="m-dir">Long</span></div>
-  </div>
-  <div class="info-note" id="mkt-note">1 lot = 100 oz · pip = $0.1 tick · $10/pip/lot</div>
-</div>
-
-<div class="footer">ASH&#39;S LOT SIZE CALCULATOR · 0.15% OR 0.30% · SAVED ON THIS DEVICE · WORKS OFFLINE</div>
-</div>
+<div class="toast" id="toast" hidden></div>
 
 <script>
-var RISK_OPTIONS = [0.15, 0.30];
+// ENGINE START
+// ─────────────────────────────────────────────────────────────────────────────
+//  Position-size engine. Mirrors MetaTrader 5's own profit formulas
+//  (MQL5 docs, ENUM_SYMBOL_CALC_MODE):
+//    Forex / CFD / crypto CFD : profit = (close - open) * ContractSize * Lots
+//    Futures                  : profit = (close - open) * TickValue / TickSize * Lots
+//  then converts from the symbol's profit currency into the account currency.
+// ─────────────────────────────────────────────────────────────────────────────
+var Engine = (function () {
+  var EPS = 1e-9;
 
-var MKT = {
-  gold: { slPresets:[100,150,200,300], slUnit:'pips',
-          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
-          note:'1 lot = 100 oz · pip = $0.1 tick · $10/pip/lot',
-          minLot:function(){ return 0.01; },
-          pipVal:function(){ return 10; } },
-  nas:  { slPresets:[80,100,150,250], slUnit:'pips',
-          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
-          note:'pip value = $/point/lot from your MT5 symbol spec',
-          minLot:function(){ return 0.01; },
-          pipVal:function(){ return parseFloat(document.getElementById('nas-ppv').value)||1; } },
-  oil:  { slPresets:[50,80,100,200], slUnit:'pips',
-          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
-          note:'pip value = barrels/lot x $0.01',
-          minLot:function(){ return 0.01; },
-          pipVal:function(){ return (parseFloat(document.getElementById('oil-bpl').value)||1000)*0.01; } },
-  btc:  { slPresets:[300,500,800,1200], slUnit:'$',
-          slLabel:'Stop loss distance ($ of price)', pipLabel:'$ per $1 move / lot',
-          note:'BTC stops are priced in dollars, not pips · $1 move = BTC/lot x $1',
-          minLot:function(){ return parseFloat(document.getElementById('btc-min').value)||0.01; },
-          pipVal:function(){ return parseFloat(document.getElementById('btc-cs').value)||1; } },
-  gbp:  { slPresets:[30,50,80,120], slUnit:'pips',
-          slLabel:'Stop loss distance (pips)', pipLabel:'Pip value / lot',
-          note:'1 lot = 100,000 GBP · pip = 0.01 JPY = Y1,000/lot · converted at USD/JPY',
-          minLot:function(){ return 0.01; },
-          pipVal:function(){ var r=parseFloat(document.getElementById('gbp-rate').value)||150; return 1000/r; } },
-  doge: { slPresets:[50,100,200,300], slUnit:'points',
-          slLabel:'Stop loss distance (points · 5th decimal)', pipLabel:'$ per point / lot',
-          note:'MT5 spec: 100,000 DOGE/lot, 5 digits · 1 point = 0.00001 = $1.00/lot',
-          maxLot:function(){ return parseFloat(document.getElementById('doge-max').value)||1; },
-          minLot:function(){ return parseFloat(document.getElementById('doge-min').value)||0.01; },
-          pipVal:function(){ return (parseFloat(document.getElementById('doge-cs').value)||100000)*0.00001; } }
-};
-var MARKETS = ['gold','nas','oil','btc','gbp','doge'];
-var DEFAULTS = {
-  mkt:'gold', dir:'long', risk:0.30,
-  sl:{ gold:200, nas:150, oil:100, btc:500, gbp:50, doge:100 },
-  slCustom:{ gold:'', nas:'', oil:'', btc:'', gbp:'', doge:'' }
-};
-var state = JSON.parse(JSON.stringify(DEFAULTS));
+  function decimalsOf(step) {
+    var s = String(step);
+    if (s.indexOf('e-') >= 0) return parseInt(s.split('e-')[1], 10);
+    var i = s.indexOf('.');
+    return i < 0 ? 0 : s.length - i - 1;
+  }
 
-function save(){
-  try {
-    localStorage.setItem('rapidLotSingle03', JSON.stringify({
-      state: state,
-      bal: document.getElementById('bal').value,
-      ppv: document.getElementById('nas-ppv').value,
-      bpl: document.getElementById('oil-bpl').value,
-      bcs: document.getElementById('btc-cs').value,
-      bmin: document.getElementById('btc-min').value,
-      gr: document.getElementById('gbp-rate').value,
-      dcs: document.getElementById('doge-cs').value,
-      dmin: document.getElementById('doge-min').value,
-      dmax: document.getElementById('doge-max').value
-    }));
-  } catch(e){}
-}
-function load(){
-  try {
-    var raw = localStorage.getItem('rapidLotSingle03');
-    if(!raw) return;
-    var s = JSON.parse(raw);
-    if(s.state){
-      state = s.state;
-      state.mkt = state.mkt || DEFAULTS.mkt;
-      state.dir = state.dir || DEFAULTS.dir;
-      ['sl','slCustom'].forEach(function(g){
-        if(!state[g]) state[g] = {};
-        MARKETS.forEach(function(m){
-          if(state[g][m] === undefined) state[g][m] = DEFAULTS[g][m];
-        });
-      });
-      if(MARKETS.indexOf(state.mkt) < 0) state.mkt = 'gold';
-      if(RISK_OPTIONS.indexOf(state.risk) < 0) state.risk = DEFAULTS.risk;
+  // Round DOWN to the broker's volume step, never up (never over-risk).
+  function floorToStep(x, step) {
+    if (!(step > 0)) return x;
+    var n = Math.floor(x / step + EPS);
+    return +(n * step).toFixed(decimalsOf(step));
+  }
+
+  // Money value (in the PROFIT currency) of a 1.0 price move on 1 lot/contract.
+  function valuePerPrice(spec) {
+    if (spec.type === 'fut') return spec.tickValue / spec.tickSize;
+    return spec.contract;
+  }
+
+  // Units of ACCOUNT currency for 1 unit of `ccy`.
+  // rates: { CCY: units of CCY per 1 USD }  (USD itself = 1)
+  // For a USD-based forex pair (e.g. USDJPY) with an entry price, MT5 converts
+  // at the live price, so we use the entry price instead of the reference rate.
+  function conversion(ccy, acct, rates, spec, entry) {
+    if (ccy === acct) return 1;
+    var perUsd = function (c) {
+      if (c === 'USD') return 1;
+      if (spec && spec.base === 'USD' && spec.quote === c && entry > 0) return entry;
+      return rates[c];
+    };
+    var r1 = perUsd(ccy), r2 = perUsd(acct);
+    if (!(r1 > 0) || !(r2 > 0)) return NaN;
+    return r2 / r1;
+  }
+
+  // Commission for ONE lot, round trip, in account currency.
+  function commissionPerLot(spec, entry, exit, conv) {
+    var c = spec.comm || { type: 'none', value: 0 };
+    var v = +c.value || 0;
+    if (!v || c.type === 'none') return { amount: 0, needsPrice: false };
+    if (c.type === 'rt') return { amount: v, needsPrice: false };          // $ per lot round trip
+    if (c.type === 'side') return { amount: 2 * v, needsPrice: false };    // $ per lot per side
+    if (c.type === 'pct') {                                                // % of notional, per side
+      if (!(entry > 0) || !(exit > 0)) return { amount: 0, needsPrice: true };
+      var notionalIn = entry * valuePerPrice(spec) * conv;
+      var notionalOut = exit * valuePerPrice(spec) * conv;
+      return { amount: (v / 100) * (notionalIn + notionalOut), needsPrice: false };
     }
-    if(s.bal) document.getElementById('bal').value = s.bal;
-    if(s.ppv) document.getElementById('nas-ppv').value = s.ppv;
-    if(s.bpl) document.getElementById('oil-bpl').value = s.bpl;
-    if(s.bcs) document.getElementById('btc-cs').value = s.bcs;
-    if(s.bmin) document.getElementById('btc-min').value = s.bmin;
-    if(s.gr) document.getElementById('gbp-rate').value = s.gr;
-    if(s.dcs) document.getElementById('doge-cs').value = s.dcs;
-    if(s.dmin) document.getElementById('doge-min').value = s.dmin;
-    if(s.dmax) document.getElementById('doge-max').value = s.dmax;
-  } catch(e){}
+    return { amount: 0, needsPrice: false };
+  }
+
+  /*
+   input = {
+     spec,               // instrument spec (see INSTRUMENTS)
+     balance,            // account balance in account currency
+     riskPct,            // e.g. 0.30
+     riskMoney,          // optional: fixed money risk (overrides riskPct when > 0)
+     acct, rates,        // account currency and USD-based rates
+     mode: 'dist'|'price',
+     dir: 'long'|'short',// used in 'dist' mode
+     distUnits,          // stop distance in the instrument's unit (pips/points/ticks/$)
+     entry, stop, tp,    // prices ('price' mode needs entry+stop; 'dist' mode entry optional)
+     tpR,                // optional take-profit as a multiple of the stop distance
+     refPrice,           // optional market price, used for % commission and margin when no entry
+     spreadUnits         // optional spread added to the stop distance (same unit)
+   }
+  */
+  function calc(inp) {
+    var spec = inp.spec, out = { warnings: [], notes: [] };
+    var unit = spec.unitSize;
+    var entry = +inp.entry || 0, stop = +inp.stop || 0, tp = +inp.tp || 0;
+    var dir = inp.dir || 'long', dist = 0;
+
+    if (inp.mode === 'price') {
+      if (!(entry > 0) || !(stop > 0)) { out.error = 'Enter an entry and a stop-loss price.'; return out; }
+      if (entry === stop) { out.error = 'Entry and stop loss are the same price.'; return out; }
+      dir = stop < entry ? 'long' : 'short';
+      dist = Math.abs(entry - stop);
+    } else {
+      dist = (+inp.distUnits || 0) * unit;
+      if (!(dist > 0)) { out.error = 'Choose a stop-loss distance.'; return out; }
+      if (entry > 0) stop = dir === 'long' ? entry - dist : entry + dist;
+    }
+    out.dir = dir;
+    out.distPrice = dist;
+    out.distUnits = dist / unit;
+
+    var spreadPrice = (+inp.spreadUnits || 0) * unit;
+    var effDist = dist + spreadPrice;
+
+    var conv = conversion(spec.ccy, inp.acct, inp.rates, spec, entry);
+    if (!(conv > 0)) { out.error = 'Missing exchange rate for ' + spec.ccy + '. Update rates or enter it in Settings.'; return out; }
+    out.conv = conv;
+
+    var vpp = valuePerPrice(spec);                       // profit ccy per 1.0 price per lot
+    var perUnitPerLot = vpp * unit * conv;                // account ccy per 1 unit per lot
+    var slLossPerLot = vpp * effDist * conv;              // account ccy lost at the stop, per lot
+    // A %-of-value commission needs a price. Use the entry when given, otherwise a
+    // reference price (live market price or the last entry typed for this market).
+    var refPrice = entry > 0 ? entry : (+inp.refPrice || 0);
+    var refStop = stop > 0 ? stop : (refPrice > 0 ? (dir === 'long' ? refPrice - dist : refPrice + dist) : 0);
+    var exitPrice = refStop > 0 ? (dir === 'long' ? refStop - spreadPrice : refStop + spreadPrice) : 0;
+    var comm = commissionPerLot(spec, refPrice, exitPrice, conv);
+    if (comm.needsPrice) out.warnings.push('Enter the entry price to include the ' + spec.comm.value + '% commission.');
+    out.commFromRef = comm.amount > 0 && !(entry > 0) && spec.comm && spec.comm.type === 'pct';
+    out.refPrice = refPrice;
+    var totalPerLot = slLossPerLot + comm.amount;
+
+    var riskTarget = inp.riskMoney > 0 ? +inp.riskMoney : (+inp.balance || 0) * (+inp.riskPct || 0) / 100;
+    if (!(riskTarget > 0)) { out.error = 'Enter your balance and risk.'; return out; }
+
+    var raw = riskTarget / totalPerLot;
+    var lots = floorToStep(raw, spec.step);
+    var min = spec.min, max = spec.max;
+
+    out.riskTarget = riskTarget;
+    out.rawLots = raw;
+    out.perUnitPerLot = perUnitPerLot;
+    out.slLossPerLot = slLossPerLot;
+    out.commPerLot = comm.amount;
+    out.totalPerLot = totalPerLot;
+    out.belowMin = false;
+
+    if (lots < min - EPS) {
+      out.belowMin = true;
+      out.lots = 0;
+      out.minRisk = min * totalPerLot;
+      out.warnings.push('Below the minimum of ' + min + ' ' + (spec.type === 'fut' ? 'contract' : 'lot') +
+        '. Taking ' + min + ' would risk ' + fmtMoney(out.minRisk, inp.acct) +
+        (inp.balance > 0 ? ' (' + (out.minRisk / inp.balance * 100).toFixed(3) + '% of balance)' : '') +
+        '. Tighten the stop or skip the trade.');
+    } else {
+      out.lots = lots;
+    }
+
+    // Split across orders when above the broker's maximum per order.
+    out.orders = [];
+    if (out.lots > 0 && max > 0 && out.lots > max + EPS) {
+      var left = out.lots;
+      while (left > EPS) {
+        var o = Math.min(max, left);
+        out.orders.push(+o.toFixed(decimalsOf(spec.step)));
+        left = +(left - o).toFixed(decimalsOf(spec.step) + 2);
+      }
+      out.warnings.push('Above the ' + max + ' lot maximum per order. Place it as ' + out.orders.length +
+        ' orders: ' + out.orders.map(function (x) { return x.toFixed(decimalsOf(spec.step)); }).join(' + ') + '.');
+    }
+
+    out.riskActual = out.lots * totalPerLot;
+    out.riskActualPct = inp.balance > 0 ? out.riskActual / inp.balance * 100 : NaN;
+    out.unused = riskTarget - out.riskActual;
+    out.commTotal = out.lots * comm.amount;
+    out.perUnitPosition = out.lots * perUnitPerLot;
+
+    if (out.lots > 0 && raw > 0 && (raw - out.lots) / raw > 0.15 && !out.belowMin) {
+      out.notes.push('Rounding down to the ' + spec.step + ' lot step leaves ' +
+        ((raw - out.lots) / raw * 100).toFixed(0) + '% of your risk unused.');
+    }
+
+    out.entry = entry; out.stop = stop;
+
+    // Take profit
+    var tpDist = 0;
+    if (inp.mode === 'price' && tp > 0) {
+      var okSide = dir === 'long' ? tp > entry : tp < entry;
+      if (!okSide) out.warnings.push('Take profit is on the wrong side of the entry for a ' + dir + '.');
+      else tpDist = Math.abs(tp - entry);
+    } else if (inp.tpR > 0) {
+      tpDist = dist * inp.tpR;
+      if (entry > 0) tp = dir === 'long' ? entry + tpDist : entry - tpDist;
+    }
+    if (tpDist > 0) {
+      out.tp = tp;
+      out.tpDistUnits = tpDist / unit;
+      out.reward = out.lots * (vpp * tpDist * conv - comm.amount);
+      out.rr = tpDist / dist;
+    }
+
+    // Margin and notional (needs a price: the entry, or the reference price)
+    if (refPrice > 0 && out.lots > 0) {
+      if (spec.type === 'fut') {
+        out.notional = out.lots * vpp * refPrice * conv;
+        if (spec.initMargin > 0) out.margin = out.lots * spec.initMargin * conv;
+      } else {
+        out.notional = out.lots * spec.contract * refPrice * conv;
+        if (spec.leverage > 0) out.margin = out.notional / spec.leverage;
+      }
+    }
+    return out;
+  }
+
+  function fmtMoney(v, ccy) {
+    var sym = { USD: '$', EUR: '€', GBP: '£', JPY: '¥', CHF: 'CHF ', CAD: 'C$', AUD: 'A$', NZD: 'NZ$' }[ccy] || '';
+    if (!isFinite(v)) return '—';
+    var d = ccy === 'JPY' ? 0 : 2;
+    return sym + v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  return { calc: calc, floorToStep: floorToStep, valuePerPrice: valuePerPrice,
+           conversion: conversion, decimalsOf: decimalsOf, fmtMoney: fmtMoney };
+})();
+// ENGINE END
+
+// ─────────────────────────── Instrument library ───────────────────────────
+// verified:true = exchange-published spec (CME) or confirmed from Ash's own MT5.
+// Everything else is the common MT5 value and should be checked once in MT5.
+var CLS = { fx: 'Forex', metal: 'Metals', index: 'Index CFDs', energy: 'Energy CFDs', crypto: 'Crypto CFDs', fut: 'Futures (CME)' };
+var CLS_COLOR = { fx: '#c084fc', metal: '#f0b429', index: '#60a5fa', energy: '#f87849', crypto: '#ffb454', fut: '#2dd4bf' };
+var NONE = { type: 'none', value: 0 };
+
+function fx(id, base, quote, extra) {
+  var jpy = quote === 'JPY';
+  return Object.assign({ id: id, label: id, sub: base + '/' + quote, cls: 'fx', type: 'cfd', contract: 100000,
+    ccy: quote, base: base, quote: quote, unit: 'pips', unitSize: jpy ? 0.01 : 0.0001, digits: jpy ? 3 : 5,
+    presets: jpy ? [15, 20, 30, 50] : [10, 15, 20, 30], min: 0.01, max: 100, step: 0.01, comm: NONE, leverage: 100,
+    note: 'Standard forex lot: 100,000 units of ' + base + '. Profit is in ' + quote + '.' }, extra || {});
+}
+function cfd(id, label, sub, cls, contract, ccy, unit, unitSize, digits, presets, extra) {
+  return Object.assign({ id: id, label: label, sub: sub, cls: cls, type: 'cfd', contract: contract, ccy: ccy,
+    unit: unit, unitSize: unitSize, digits: digits, presets: presets, min: 0.01, max: 100, step: 0.01, comm: NONE }, extra || {});
+}
+function fut(id, label, sub, tickSize, tickValue, unit, unitSize, digits, presets, extra) {
+  return Object.assign({ id: id, label: label, sub: sub, cls: 'fut', type: 'fut', tickSize: tickSize, tickValue: tickValue,
+    ccy: 'USD', unit: unit, unitSize: unitSize, digits: digits, presets: presets, min: 1, max: 999, step: 1,
+    comm: { type: 'rt', value: 0 }, verified: true, note: 'CME exchange specification.' }, extra || {});
 }
 
-function setMkt(m){
-  state.mkt = m;
-  MARKETS.forEach(function(x){
-    document.getElementById('tab-'+x).className = 'tab' + (x===m ? ' active-'+m : '');
+var INSTRUMENTS = [
+  // Ash's markets
+  cfd('XAUUSD', 'GOLD', 'XAU/USD', 'metal', 100, 'USD', 'pips', 0.1, 2, [80, 100, 150, 200, 250, 300, 400],
+      { color: '#f0b429', leverage: 30, note: '1 lot = 100 oz. 1 pip = 0.10, worth $10 per lot.' }),
+  cfd('US100', 'NAS100', 'US100.cash', 'index', 1, 'USD', 'points', 1, 2, [50, 80, 100, 150, 200, 250, 300],
+      { color: '#60a5fa', leverage: 50, verified: true, note: 'Confirmed from your MT5: contract size 1, 2 digits, min 0.01, step 0.01. 1 point = $1 per lot.' }),
+  cfd('USOIL', 'CRUDE', 'USOIL.cash', 'energy', 1000, 'USD', 'pips', 0.01, 2, [30, 50, 80, 100, 150, 200, 300],
+      { color: '#f87849', leverage: 10, defaultRisk: 0.075,
+        note: 'Defaulted to 1,000 barrels, the larger common size, so an unchecked spec can only make the lot smaller, never bigger. Confirm the contract size in MT5.' }),
+  cfd('BTCUSD', 'BTC', 'BTC/USD', 'crypto', 1, 'USD', '$', 1, 2, [200, 300, 500, 800, 1000, 1200, 1500],
+      { color: '#ffb454', comm: { type: 'pct', value: 0.0325 }, leverage: 1 / 0.3, cb: 'BTC-USD',
+        note: '1 lot = 1 BTC. Commission assumed to match your DOGE spec (0.0325% per side); confirm in MT5.' }),
+  fx('GBPJPY', 'GBP', 'JPY', { label: 'GBPJPY', sub: 'Pound-Yen', color: '#c084fc', presets: [20, 30, 50, 80, 100, 120, 150] }),
+  cfd('DOGEUSD', 'DOGE', 'DOGE/USD', 'crypto', 100000, 'USD', 'points', 0.00001, 5, [30, 50, 100, 150, 200, 300, 500],
+      { color: '#22d3ee', max: 1, comm: { type: 'pct', value: 0.0325 }, leverage: 1 / 0.3, verified: true, cb: 'DOGE-USD',
+        note: 'Confirmed from your MT5: contract 100,000, 5 digits, min 0.01, max 1, step 0.01, commission 0.0325% per side, 30% margin. 1 point = 0.00001 = $1 per lot.' }),
+
+  // Forex
+  fx('EURUSD', 'EUR', 'USD'), fx('GBPUSD', 'GBP', 'USD'), fx('AUDUSD', 'AUD', 'USD'), fx('NZDUSD', 'NZD', 'USD'),
+  fx('USDJPY', 'USD', 'JPY'), fx('USDCHF', 'USD', 'CHF'), fx('USDCAD', 'USD', 'CAD'),
+  fx('EURJPY', 'EUR', 'JPY', { presets: [20, 30, 50, 80] }), fx('AUDJPY', 'AUD', 'JPY'), fx('EURGBP', 'EUR', 'GBP'),
+
+  // Metals
+  cfd('XAGUSD', 'SILVER', 'XAG/USD', 'metal', 5000, 'USD', 'pips', 0.01, 3, [10, 20, 30, 50],
+      { color: '#cbd5e1', leverage: 30, note: '1 lot = 5,000 oz. 1 pip = 0.01, worth $50 per lot.' }),
+
+  // Index CFDs
+  cfd('US500', 'US500', 'US500.cash', 'index', 1, 'USD', 'points', 1, 2, [10, 15, 20, 30], { leverage: 50, note: 'Common .cash size: 1 point = $1 per lot.' }),
+  cfd('US30', 'US30', 'US30.cash', 'index', 1, 'USD', 'points', 1, 2, [50, 80, 120, 200], { leverage: 50, note: 'Common .cash size: 1 point = $1 per lot.' }),
+  cfd('GER40', 'GER40', 'GER40.cash', 'index', 1, 'EUR', 'points', 1, 2, [20, 30, 50, 80], { leverage: 50, note: '1 point = €1 per lot, converted to your account currency.' }),
+  cfd('UK100', 'UK100', 'UK100.cash', 'index', 1, 'GBP', 'points', 1, 2, [10, 20, 30, 50], { leverage: 50, note: '1 point = £1 per lot, converted to your account currency.' }),
+
+  // Energy CFDs
+  cfd('UKOIL', 'BRENT', 'UKOIL.cash', 'energy', 1000, 'USD', 'pips', 0.01, 2, [50, 80, 100, 200],
+      { leverage: 10, note: 'Defaulted to 1,000 barrels (the safer assumption). Confirm in MT5.' }),
+
+  // Crypto CFDs
+  cfd('ETHUSD', 'ETH', 'ETH/USD', 'crypto', 1, 'USD', '$', 1, 2, [20, 40, 60, 100],
+      { comm: { type: 'pct', value: 0.0325 }, leverage: 1 / 0.3, cb: 'ETH-USD', note: '1 lot = 1 ETH. Confirm commission in MT5.' }),
+
+  // Futures (CME): tick size and tick value from the exchange specs
+  fut('ES', 'ES', 'E-mini S&P 500', 0.25, 12.5, 'points', 1, 2, [4, 6, 10, 15]),
+  fut('MES', 'MES', 'Micro E-mini S&P', 0.25, 1.25, 'points', 1, 2, [4, 6, 10, 15]),
+  fut('NQ', 'NQ', 'E-mini Nasdaq-100', 0.25, 5, 'points', 1, 2, [10, 20, 30, 50]),
+  fut('MNQ', 'MNQ', 'Micro E-mini Nasdaq', 0.25, 0.5, 'points', 1, 2, [10, 20, 30, 50]),
+  fut('YM', 'YM', 'E-mini Dow', 1, 5, 'points', 1, 0, [30, 50, 80, 120]),
+  fut('MYM', 'MYM', 'Micro E-mini Dow', 1, 0.5, 'points', 1, 0, [30, 50, 80, 120]),
+  fut('RTY', 'RTY', 'E-mini Russell 2000', 0.1, 5, 'points', 1, 1, [5, 8, 12, 20]),
+  fut('M2K', 'M2K', 'Micro Russell 2000', 0.1, 0.5, 'points', 1, 1, [5, 8, 12, 20]),
+  fut('GC', 'GC', 'Gold, 100 oz', 0.1, 10, 'ticks', 0.1, 1, [20, 30, 50, 80]),
+  fut('MGC', 'MGC', 'Micro Gold, 10 oz', 0.1, 1, 'ticks', 0.1, 1, [20, 30, 50, 80]),
+  fut('SI', 'SI', 'Silver, 5,000 oz', 0.005, 25, 'ticks', 0.005, 3, [20, 40, 60, 100]),
+  fut('SIL', 'SIL', 'Micro Silver, 1,000 oz', 0.005, 5, 'ticks', 0.005, 3, [20, 40, 60, 100]),
+  fut('CL', 'CL', 'Crude Oil, 1,000 bbl', 0.01, 10, 'ticks', 0.01, 2, [10, 20, 30, 50]),
+  fut('MCL', 'MCL', 'Micro Crude, 100 bbl', 0.01, 1, 'ticks', 0.01, 2, [10, 20, 30, 50]),
+  fut('NG', 'NG', 'Natural Gas', 0.001, 10, 'ticks', 0.001, 3, [10, 20, 30, 50]),
+  fut('BTCF', 'BTC', 'CME Bitcoin, 5 BTC', 5, 25, 'ticks', 5, 0, [40, 60, 100, 200]),
+  fut('MBT', 'MBT', 'Micro Bitcoin, 0.1 BTC', 5, 0.5, 'ticks', 5, 0, [40, 60, 100, 200]),
+  fut('ETHF', 'ETH', 'CME Ether, 50 ETH', 0.5, 25, 'ticks', 0.5, 1, [20, 40, 60, 100]),
+  fut('MET', 'MET', 'Micro Ether, 0.1 ETH', 0.5, 0.05, 'ticks', 0.5, 1, [20, 40, 60, 100]),
+  fut('6E', '6E', 'Euro FX', 0.00005, 6.25, 'ticks', 0.00005, 5, [10, 20, 30, 40]),
+  fut('6J', '6J', 'Japanese Yen', 0.0000005, 6.25, 'ticks', 0.0000005, 7, [10, 20, 30, 40]),
+  fut('6B', '6B', 'British Pound', 0.0001, 6.25, 'ticks', 0.0001, 4, [10, 20, 30, 40])
+];
+var BY_ID = {};
+INSTRUMENTS.forEach(function (m) { if (!m.color) m.color = CLS_COLOR[m.cls]; BY_ID[m.id] = m; });
+
+var CURRENCIES = ['EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD'];
+var BUILTIN_RATES = { date: '2026-10-01', src: 'built-in', data: { EUR: 0.88248, GBP: 0.75401, JPY: 157.7, CHF: 0.83414, CAD: 1.4214, AUD: 1.4377, NZD: 1.776 } };
+var DEFAULT_FAVS = ['XAUUSD', 'US100', 'USOIL', 'BTCUSD', 'GBPJPY', 'DOGEUSD'];
+var KEY = 'ashLotV2';
+var LIVE_NET = true;   // the web-page build sets this to false: that host blocks outside requests
+
+// ─────────────────────────── State ───────────────────────────
+function blankState() {
+  return { v: 2, balance: '', acct: 'USD', mkt: 'XAUUSD', favs: DEFAULT_FAVS.slice(), per: {}, specs: {}, rates: null, manual: {} };
+}
+var S = blankState();
+
+function load() {
+  var raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) {}
+  if (raw) {
+    try { var s = JSON.parse(raw); S = Object.assign(blankState(), s); } catch (e) {}
+  } else {
+    // carry the balance and DOGE spec over from the previous version
+    try { migrateV1(JSON.parse(localStorage.getItem('rapidLotSingle03') || 'null')); } catch (e) {}
+  }
+  if (!S.favs || !S.favs.length) S.favs = DEFAULT_FAVS.slice();
+  S.favs = S.favs.filter(function (id) { return BY_ID[id]; });
+  if (!BY_ID[S.mkt]) S.mkt = 'XAUUSD';
+}
+// Carry balance, risk, stops and any edited specs over from the first version of the app.
+function migrateV1(old) {
+  if (!old) return;
+  var MAP = { gold: 'XAUUSD', nas: 'US100', oil: 'USOIL', btc: 'BTCUSD', gbp: 'GBPJPY', doge: 'DOGEUSD' };
+  if (old.bal) S.balance = old.bal;
+  var st = old.state || {};
+  if (MAP[st.mkt]) S.mkt = MAP[st.mkt];
+  Object.keys(MAP).forEach(function (k) {
+    var id = MAP[k], p = S.per[id] = {};
+    if (id !== 'USOIL' && (st.risk === 0.15 || st.risk === 0.3)) p.risk = st.risk;
+    if (st.dir) p.dir = st.dir;
+    if (st.slCustom && st.slCustom[k]) p.slCustom = String(st.slCustom[k]);
+    else if (st.sl && st.sl[k] > 0) {
+      if (BY_ID[id].presets.indexOf(st.sl[k]) >= 0) p.sl = st.sl[k]; else p.slCustom = String(st.sl[k]);
+    }
   });
-  document.getElementById('mkt-wrap').className = 'mkt-'+m;
-  ['nas','oil','btc','gbp','doge'].forEach(function(x){
-    var el = document.getElementById('spec-'+x);
-    if(el) el.style.display = (x===m ? 'flex' : 'none');
+  var setSpec = function (id, k, v, dflt) { v = parseFloat(v); if (v > 0 && v !== dflt) { S.specs[id] = S.specs[id] || {}; S.specs[id][k] = v; } };
+  setSpec('USOIL', 'contract', old.bpl, 1000);
+  setSpec('US100', 'contract', old.ppv, 1);
+  setSpec('BTCUSD', 'contract', old.bcs, 1);
+  setSpec('BTCUSD', 'min', old.bmin, 0.01);
+  setSpec('DOGEUSD', 'contract', old.dcs, 100000);
+  setSpec('DOGEUSD', 'min', old.dmin, 0.01);
+  setSpec('DOGEUSD', 'max', old.dmax, 1);
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+function spec(id) {
+  var base = BY_ID[id], o = S.specs[id] || {};
+  var s = Object.assign({}, base, o);
+  if (o.comm) s.comm = Object.assign({}, base.comm, o.comm);
+  return s;
+}
+function per(id) {
+  if (!S.per[id]) S.per[id] = {};
+  var p = S.per[id], m = BY_ID[id];
+  if (p.risk === undefined && p.riskCustom === undefined) {
+    if (m.defaultRisk && m.defaultRisk !== 0.15 && m.defaultRisk !== 0.3) { p.riskCustom = String(m.defaultRisk); p.useCustom = true; }
+  }
+  if (p.risk !== 0.15 && p.risk !== 0.3) p.risk = 0.3;
+  if (p.useCustom === undefined) p.useCustom = !!p.riskCustom;
+  if (p.useMoney === undefined) p.useMoney = num(p.money) > 0;
+  if (!p.mode) p.mode = 'dist';
+  if (!p.dir) p.dir = 'long';
+  if (p.sl === undefined && !p.slCustom) { var ps = (p.presets && p.presets.length) ? p.presets : m.presets; p.sl = ps[Math.min(1, ps.length - 1)]; }
+  return p;
+}
+// Market price used for % commissions and margin when no entry price is typed.
+function refPriceFor(id) {
+  var p = per(id), v = num(p.ref);
+  if (!(v > 0)) return 0;
+  if (p.refSrc === 'manual' || Date.now() - (p.refAt || 0) < 86400000) return v;
+  return 0;
+}
+function refLabel(id, m) {
+  var p = per(id), v = num(p.ref), t = p.refAt ? new Date(p.refAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  var pv = v.toLocaleString('en-US', { maximumFractionDigits: Math.max(2, m.digits) });
+  if (p.refSrc === 'live') return 'the live price ' + pv + ' (Coinbase, ' + t + ')';
+  if (p.refSrc === 'entry') return 'your last entry price ' + pv;
+  return 'your price ' + pv;
+}
+function fetchLivePrice(id) {
+  var m = BY_ID[id];
+  if (!LIVE_NET || !m || !m.cb || !('fetch' in window)) return;
+  var p = per(id);
+  if (p.refSrc === 'manual' || Date.now() - (p.refAt || 0) < 5 * 60000) return;
+  fetch('https://api.coinbase.com/v2/prices/' + m.cb + '/spot', { cache: 'no-store' })
+    .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+    .then(function (j) {
+      var v = j && j.data && parseFloat(j.data.amount);
+      if (!(v > 0)) return;
+      var p2 = per(id); if (p2.refSrc === 'manual') return;
+      p2.ref = String(v); p2.refSrc = 'live'; p2.refAt = Date.now(); save();
+      if (S.mkt === id) { recalc(); var f = document.querySelector('#spec-body [data-k="ref"]'); if (f && document.activeElement !== f) f.value = v; }
+    }).catch(function () {});
+}
+function rates() {
+  var base = (S.rates && S.rates.data) ? S.rates.data : BUILTIN_RATES.data, r = { USD: 1 };
+  CURRENCIES.forEach(function (c) {
+    var man = parseFloat(S.manual[c]);
+    r[c] = man > 0 ? man : base[c];
   });
-  document.getElementById('mkt-note').textContent = MKT[m].note;
-  document.getElementById('sl-label').textContent = MKT[m].slLabel;
-  document.getElementById('m-pip-lbl').textContent = MKT[m].pipLabel;
-  buildChips();
-  recalc();
-  save();
+  return r;
 }
 
-function setRisk(r){
-  state.risk = r;
-  markRisk();
-  recalc();
-  save();
+// ─────────────────────────── Helpers ───────────────────────────
+var $ = function (id) { return document.getElementById(id); };
+function num(v) { var x = parseFloat(v); return isFinite(x) ? x : 0; }
+function money(v) { return Engine.fmtMoney(v, S.acct); }
+function px(v, d) { return isFinite(v) && v > 0 ? v.toFixed(d) : '—'; }
+function unitWord(m, n) {
+  if (m.unit === '$') return '$ move';
+  if (n === 1) return m.unit.replace(/s$/, '');
+  return m.unit;
+}
+function fmtUnits(m, n) {
+  var r = Math.abs(n - Math.round(n)) < 1e-6 ? String(Math.round(n)) : n.toFixed(1);
+  return m.unit === '$' ? '$' + r : r + ' ' + unitWord(m, n);
+}
+function pct(v) { var t = String(+(+v).toFixed(4)), d = t.indexOf('.') < 0 ? 0 : t.length - t.indexOf('.') - 1; return (+v).toFixed(Math.max(2, d)) + '%'; }
+function lotDec(m) { return Engine.decimalsOf(m.step); }
+function toast(t) {
+  var el = $('toast'); el.textContent = t; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, 1600);
+}
+function specSummary(m) {
+  if (m.type === 'fut') return 'tick ' + m.tickSize + ' = $' + m.tickValue + ' · ' + money(m.tickValue / m.tickSize * m.unitSize) + '/' + unitWord(m, 1);
+  var s = (m.contract >= 1000 ? m.contract.toLocaleString('en-US') : m.contract) + ' per lot';
+  return s + ' · 1 ' + unitWord(m, 1) + ' = ' + m.unitSize;
 }
 
-function markRisk(){
-  [['risk-015',0.15],['risk-030',0.30]].forEach(function(p){
-    var b = document.getElementById(p[0]);
-    var on = state.risk === p[1];
-    b.className = 'risk-btn' + (on ? ' on' : '');
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+// ─────────────────────────── Rendering ───────────────────────────
+function renderFavs() {
+  var box = $('favs'); box.innerHTML = '';
+  S.favs.forEach(function (id) {
+    var m = BY_ID[id], b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab' + (id === S.mkt ? ' on' : '');
+    b.style.setProperty('--c', m.color);
+    b.innerHTML = '<b></b><span></span>';
+    b.querySelector('b').textContent = m.label; b.querySelector('span').textContent = m.sub;
+    b.setAttribute('aria-pressed', id === S.mkt ? 'true' : 'false');
+    b.onclick = function () { selectMarket(id); };
+    box.appendChild(b);
   });
+  if (S.favs.indexOf(S.mkt) < 0) {
+    var m = BY_ID[S.mkt], b2 = document.createElement('button');
+    b2.type = 'button'; b2.className = 'tab on'; b2.style.setProperty('--c', m.color);
+    b2.innerHTML = '<b></b><span></span>';
+    b2.querySelector('b').textContent = m.label; b2.querySelector('span').textContent = m.sub;
+    box.appendChild(b2);
+  }
 }
 
-function setDir(d){
-  state.dir = d;
-  document.getElementById('d-long').className = 'dir-btn' + (d==='long' ? ' long-sel' : '');
-  document.getElementById('d-short').className = 'dir-btn' + (d==='short' ? ' short-sel' : '');
-  document.getElementById('m-dir').textContent = d==='long' ? 'Long' : 'Short';
-  save();
-}
+function renderMarket() {
+  var m = spec(S.mkt), p = per(S.mkt);
+  document.documentElement.style.setProperty('--mc', m.color);
+  $('mkt-sub').textContent = CLS[m.cls] + ' · ' + specSummary(m);
+  renderFavs();
 
-function buildChips(){
-  var m = state.mkt;
-  var sc = document.getElementById('sl-chips');
-  sc.innerHTML = '';
-  MKT[m].slPresets.forEach(function(p){
+  // risk chips
+  renderRisk();
+  $('risk-scope').textContent = 'for ' + m.label;
+
+  // stop mode
+  $('mode-dist').classList.toggle('on', p.mode === 'dist');
+  $('mode-price').classList.toggle('on', p.mode === 'price');
+  $('dist-block').hidden = p.mode !== 'dist';
+  $('price-block').hidden = p.mode !== 'price';
+
+  // distance chips
+  $('sl-lbl').textContent = 'Distance (' + (m.unit === '$' ? '$ of price' : m.unit) + ')';
+  var sc = $('sl-chips'); sc.innerHTML = '';
+  var presets = presetsOf(S.mkt);
+  // a stop picked from an older button set that no longer exists stays exactly as it was, as a custom value
+  if (!p.slCustom && presets.indexOf(p.sl) < 0 && p.sl > 0) { p.slCustom = String(p.sl); save(); }
+  sc.classList.toggle('g4', presets.length + 1 > 5);
+  presets.forEach(function (v) {
     var b = document.createElement('button');
-    b.className = 'chip' + (state.sl[m]===p && !state.slCustom[m] ? ' on' : '');
-    b.textContent = p;
-    b.onclick = function(){ state.sl[m]=p; state.slCustom[m]=''; buildChips(); recalc(); save(); };
+    b.type = 'button'; b.className = 'chip' + (!p.slCustom && p.sl === v ? ' on' : '');
+    b.textContent = m.unit === '$' ? '$' + v : v;
+    b.onclick = function () { p.sl = v; p.slCustom = ''; save(); renderMarket(); };
     sc.appendChild(b);
   });
-  var scust = document.createElement('div');
-  scust.className = 'chip custom' + (state.slCustom[m] ? ' on' : '');
-  var si = document.createElement('input');
-  si.id='sl-custom'; si.setAttribute('aria-label','Custom stop loss'); si.setAttribute('inputmode','decimal');
-  si.type='number'; si.step='any'; si.placeholder = (MKT[m].slUnit==='$') ? '$' : ((MKT[m].slUnit==='points') ? 'pts' : 'pips');
-  si.value = state.slCustom[m];
-  si.oninput = function(){
-    state.slCustom[m]=this.value;
-    scust.className = 'chip custom' + (this.value ? ' on' : '');
-    markSlChips(!this.value);
-    recalc(); save();
+  var cw = document.createElement('div');
+  cw.className = 'chip cust' + (p.slCustom ? ' on' : '');
+  var ci = document.createElement('input');
+  ci.id = 'sl-custom'; ci.type = 'number'; ci.step = 'any'; ci.setAttribute('inputmode', 'decimal');
+  ci.placeholder = 'custom'; ci.setAttribute('aria-label', 'Custom stop distance'); ci.value = p.slCustom || '';
+  ci.oninput = function () {
+    p.slCustom = this.value; cw.classList.toggle('on', !!this.value);
+    sc.querySelectorAll('button.chip').forEach(function (b, i) { b.classList.toggle('on', !p.slCustom && presets[i] === p.sl); });
+    save(); recalc();
   };
-  scust.appendChild(si);
-  sc.appendChild(scust);
+  cw.appendChild(ci); sc.appendChild(cw);
+  $('sl-ed-lbl').textContent = 'Your stop buttons for ' + m.label + ' (' + (m.unit === '$' ? '$ of price' : m.unit) + ')';
+  if ($('sl-editor').hidden) $('sl-ed-in').value = presets.join(', ');
+
+  $('d-long').classList.toggle('on', p.dir === 'long');
+  $('d-short').classList.toggle('on', p.dir === 'short');
+  $('entry-d').value = p.entry || '';
+  $('tp-r').value = String(p.tpR || 0);
+  $('entry-p').value = p.entry || '';
+  $('stop-p').value = p.stop || '';
+  $('tp-p').value = p.tp || '';
+  $('spread').value = p.spread || '';
+  $('spread-lbl').textContent = 'Spread to add (' + (m.unit === '$' ? '$' : m.unit) + ')';
+  $('lot-unit').textContent = (m.type === 'fut' ? 'contracts' : 'lots') + ' · rounded down to ' + m.step + ' · tap to copy';
+
+  renderSpec();
+  recalc();
 }
 
-function markSlChips(presetActive){
-  var m = state.mkt;
-  var chips = document.getElementById('sl-chips').querySelectorAll('button.chip');
-  chips.forEach(function(c, i){
-    c.className = 'chip' + (presetActive && MKT[m].slPresets[i]===state.sl[m] ? ' on' : '');
+function renderSpec() {
+  var m = spec(S.mkt), base = BY_ID[S.mkt], o = S.specs[S.mkt] || {};
+  var verified = o.verified !== undefined ? o.verified : !!base.verified;
+  $('spec-name').textContent = m.label + (m.sub && m.cls !== 'fx' ? ' (' + m.sub + ')' : '');
+  var badge = $('spec-badge');
+  badge.className = 'badge ' + (verified ? 'ok' : 'chk');
+  badge.textContent = verified ? '✓ Confirmed' : 'Check in MT5';
+
+  var isF = m.type === 'fut', html = '';
+  html += '<p class="help">' + escapeHtml(m.note || '') + '</p>';
+  html += '<div class="grid2">';
+  if (isF) {
+    html += fieldHtml('tickSize', 'Tick size', m.tickSize) + fieldHtml('tickValue', 'Tick value ($)', m.tickValue);
+  } else {
+    html += fieldHtml('contract', 'Contract size', m.contract);
+    html += '<label><span class="lbl">Profit currency</span><select class="field" data-k="ccy">' +
+      ['USD'].concat(CURRENCIES).map(function (c) { return '<option' + (c === m.ccy ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></label>';
+  }
+  html += fieldHtml('unitSize', '1 ' + unitWord(m, 1) + ' = price', m.unitSize);
+  html += fieldHtml('digits', 'Price digits', m.digits);
+  html += fieldHtml('min', isF ? 'Min contracts' : 'Volume min', m.min);
+  html += fieldHtml('max', isF ? 'Max contracts' : 'Volume max', m.max);
+  html += fieldHtml('step', isF ? 'Contract step' : 'Volume step', m.step);
+  html += '<label><span class="lbl">Commission type</span><select class="field" data-k="commType">' +
+    [['none', 'None'], ['rt', '$ per lot, round trip'], ['side', '$ per lot, per side'], ['pct', '% of value, per side']].map(function (x) {
+      return '<option value="' + x[0] + '"' + (x[0] === (m.comm.type || 'none') ? ' selected' : '') + '>' + x[1] + '</option>';
+    }).join('') + '</select></label>';
+  html += fieldHtml('commValue', 'Commission value', m.comm.value || 0);
+  if (m.comm.type === 'pct') html += fieldHtml('ref', 'Price for commission', per(S.mkt).ref || '');
+  if (isF) html += fieldHtml('initMargin', 'Initial margin ($)', m.initMargin || '');
+  else html += fieldHtml('leverage', 'Leverage (1:x)', m.leverage ? +(+m.leverage).toFixed(2) : '');
+  html += '</div>';
+  html += '<label class="check"><input type="checkbox" id="spec-ok"' + (verified ? ' checked' : '') + '> These values match my MT5 Specification</label>';
+  if (m.comm.type === 'pct') html += '<p class="help">A % commission depends on the price. ' + (m.cb && LIVE_NET ? 'The live price is fetched automatically; type a price here only to override it (clear it to go back to live).' : 'Type the rough market price here, or enter an entry price above.') + '</p>';
+  html += '<p class="help">In MT5: Market Watch → right-click the symbol → Specification. Copy Contract size, Volume min / max / step, and the Commissions section. Futures specs come from CME and are already correct.</p>';
+  html += '<button class="btn" type="button" id="spec-reset">Reset ' + escapeHtml(m.label) + ' to default</button>';
+  $('spec-body').innerHTML = html;
+
+  $('spec-body').querySelectorAll('[data-k]').forEach(function (el) {
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () {
+      var k = el.getAttribute('data-k'), o2 = S.specs[S.mkt] = S.specs[S.mkt] || {};
+      if (k === 'ref') {
+        var pr = per(S.mkt); pr.ref = el.value; pr.refSrc = el.value ? 'manual' : ''; pr.refAt = el.value ? Date.now() : 0;
+        save(); recalc(); if (!el.value) fetchLivePrice(S.mkt); return;
+      }
+      if (k === 'ccy') o2.ccy = el.value;
+      else if (k === 'commType') { o2.comm = Object.assign({}, spec(S.mkt).comm, { type: el.value }); save(); renderSpec(); recalc(); return; }
+      else if (k === 'commValue') o2.comm = Object.assign({}, spec(S.mkt).comm, { value: num(el.value) });
+      else if (el.value === '') delete o2[k];
+      else { var v = num(el.value); if (k === 'digits') v = Math.max(0, Math.min(8, Math.round(v))); if (v > 0 || k === 'digits') o2[k] = v; }
+      save(); $('mkt-sub').textContent = CLS[spec(S.mkt).cls] + ' · ' + specSummary(spec(S.mkt)); recalc();
+    });
+  });
+  $('spec-ok').onchange = function () {
+    var o2 = S.specs[S.mkt] = S.specs[S.mkt] || {}; o2.verified = this.checked; save(); renderSpecBadgeOnly(); recalc();
+  };
+  $('spec-reset').onclick = function () { delete S.specs[S.mkt]; save(); renderMarket(); toast('Spec reset to default'); };
+}
+function renderSpecBadgeOnly() {
+  var base = BY_ID[S.mkt], o = S.specs[S.mkt] || {}, v = o.verified !== undefined ? o.verified : !!base.verified;
+  $('spec-badge').className = 'badge ' + (v ? 'ok' : 'chk');
+  $('spec-badge').textContent = v ? '✓ Confirmed' : 'Check in MT5';
+}
+function fieldHtml(k, label, v) {
+  return '<label><span class="lbl">' + label + '</span><input class="field" data-k="' + k + '" type="number" inputmode="decimal" step="any" value="' + (v === '' || v === undefined ? '' : v) + '"></label>';
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+function isVerified(id) { var o = S.specs[id] || {}; return o.verified !== undefined ? o.verified : !!BY_ID[id].verified; }
+
+function recalc() {
+  var m = spec(S.mkt), p = per(S.mkt), r = rates();
+  var bal = num(S.balance);
+  var moneyRisk = p.useMoney ? moneyNum(p.money) : 0;
+  var riskPct = p.useMoney ? 0 : riskOf(p);
+  $('risk-money').textContent = p.useMoney
+    ? (moneyRisk > 0 ? money(moneyRisk) + (bal > 0 ? ' = ' + pct(moneyRisk / bal * 100) : '') : '')
+    : (bal > 0 && riskPct > 0 ? pct(riskPct) + ' = ' + money(bal * riskPct / 100) : '');
+
+  var inp = {
+    spec: m, balance: bal, riskPct: riskPct, riskMoney: moneyRisk, acct: S.acct, rates: r, mode: p.mode, dir: p.dir,
+    distUnits: p.slCustom ? num(p.slCustom) : p.sl, entry: num(p.entry), stop: num(p.stop), tp: num(p.tp),
+    tpR: p.mode === 'dist' ? num(p.tpR) : 0, spreadUnits: num(p.spread), refPrice: refPriceFor(S.mkt)
+  };
+  var o = Engine.calc(inp), isF = m.type === 'fut';
+
+  $('r-top').textContent = m.label + ' · ' + (p.useMoney ? (moneyRisk > 0 ? money(moneyRisk) : ccySym(S.acct) + '—') + ' risk' : pct(riskPct) + ' risk');
+  var dk = { top: $('r-top').textContent, sub: '', lot: '—', zero: false };
+  var unitPrice = m.unit === '$' ? '' : ' (' + (m.unitSize * 1).toFixed(Math.max(m.digits, Engine.decimalsOf(m.unitSize))) + ')';
+  $('unit-note').textContent = '1 ' + unitWord(m, 1) + unitPrice + ' = ' + money(Engine.valuePerPrice(m) * m.unitSize * (o.conv || Engine.conversion(m.ccy, S.acct, r, m, num(p.entry)) || NaN)) + ' per ' + (isF ? 'contract' : 'lot');
+
+  var lotEl = $('lot'), stats = $('stats'), msgs = $('msgs');
+  msgs.innerHTML = ''; stats.innerHTML = ''; $('conv').textContent = ''; $('r-risk').innerHTML = '';
+  lotEl.className = 'lot';
+
+  if (!(moneyRisk > 0) && riskPct > 1) {
+    addMsg('warn', 'You are risking ' + pct(riskPct) + (bal > 0 ? ' (' + money(bal * riskPct / 100) + ')' : '') +
+      ' on this trade. Your standard is 0.15% or 0.30%, so check this isn\u2019t a typo.');
+  }
+  if (p.useMoney && moneyRisk > 0 && moneyTooBig(p)) {
+    addMsg('warn', 'You are risking ' + money(moneyRisk) + ', which is ' + pct(moneyRisk / bal * 100) +
+      ' of your balance. Your standard is 0.15% or 0.30%, so check this isn\u2019t a typo.');
+  }
+  if (o.error && p.useMoney && !(moneyRisk > 0)) o.error = 'Type the amount to risk in Fixed ' + ccySym(S.acct) + ', or tap 0.15% or 0.30%.';
+  else if (o.error && !p.useMoney && !(riskPct > 0) && bal > 0) o.error = 'Type a risk % above 0 in Custom, or tap 0.15% or 0.30%.';
+
+  if (o.error) {
+    lotEl.textContent = '—';
+    addMsg('err', o.error);
+    $('price-note').textContent = '';
+    dk.sub = o.error; setDock(dk);
+    return;
+  }
+
+  if (o.belowMin) { lotEl.textContent = '0'; lotEl.className = 'lot zero'; }
+  else lotEl.textContent = o.lots.toFixed(lotDec(m));
+  lotEl.dataset.copy = o.belowMin ? '' : o.lots.toFixed(lotDec(m));
+
+  dk.lot = o.belowMin ? '0' : o.lots.toFixed(lotDec(m)); dk.zero = o.belowMin;
+  dk.sub = o.belowMin ? 'below the minimum, see warning' : money(o.riskActual) + ' risk · SL ' + (o.stop > 0 ? px(o.stop, m.digits) : fmtUnits(m, o.distUnits));
+  dk.unit = isF ? 'ct' : 'lots';
+  setDock(dk);
+  $('r-risk').innerHTML = money(o.riskActual) + ' at risk <em>of ' + money(o.riskTarget) + ' target' +
+    (isFinite(o.riskActualPct) ? ' · ' + o.riskActualPct.toFixed(3) + '%' : '') + '</em>';
+
+  // stats
+  var dl = o.dir === 'long' ? '▲ Long' : '▼ Short';
+  var slVal = o.stop > 0 ? px(o.stop, m.digits) : fmtUnits(m, o.distUnits);
+  var slSub = (o.stop > 0 ? fmtUnits(m, o.distUnits) + ' · ' : '') + dl;
+  addStat('Stop loss', slVal, slSub);
+  if (o.tp > 0 || o.rr > 0) {
+    addStat('Take profit', o.tp > 0 ? px(o.tp, m.digits) : fmtUnits(m, o.tpDistUnits), o.rr.toFixed(2) + 'R · +' + money(o.reward));
+  } else {
+    addStat('Loss per ' + (isF ? 'contract' : 'lot'), money(o.totalPerLot), o.commPerLot > 0 ? 'incl. ' + money(o.commPerLot) + ' commission' : 'at the stop');
+  }
+  addStat('Per ' + unitWord(m, 1), money(o.perUnitPosition), money(o.perUnitPerLot) + ' per ' + (isF ? 'contract' : 'lot'));
+  if (o.commPerLot > 0 || (m.comm && m.comm.type !== 'none' && m.comm.value)) addStat('Commission', money(o.commTotal), 'round trip');
+  if (o.margin > 0) addStat('Margin', money(o.margin), isF ? 'initial' : (m.leverage >= 5 ? '1:' + (+m.leverage).toFixed(2).replace(/\.00$/, '') + ' leverage' : (100 / m.leverage).toFixed(0) + '% margin rate'));
+  if (o.notional > 0) addStat('Position value', money(o.notional), (o.lots).toFixed(lotDec(m)) + (isF ? ' contracts' : ' lots'));
+  if (o.unused > 0.005 && !o.belowMin) addStat('Unused risk', money(o.unused), 'from rounding down');
+  if (stats.children.length % 2) stats.lastChild.style.gridColumn = 'span 2';
+
+  if (m.ccy !== S.acct) {
+    var usedEntry = m.base === 'USD' && m.quote === m.ccy && num(p.entry) > 0;
+    $('conv').textContent = m.ccy + ' → ' + S.acct + ' at ' + (1 / o.conv).toFixed(m.ccy === 'JPY' ? 2 : 5) + ' ' + m.ccy + ' per ' + S.acct +
+      (usedEntry ? ' (your entry price)' : (S.manual[m.ccy] ? ' (manual)' : ' (' + rateSource() + ')'));
+  }
+
+  if (p.mode === 'price') {
+    $('price-note').textContent = (o.dir === 'long' ? '▲ Long' : '▼ Short') + ' (from the stop below/above entry) · stop ' + fmtUnits(m, o.distUnits);
+  }
+
+  if (!isVerified(S.mkt)) addMsg('spec', m.label + ' spec not confirmed yet. <button type="button" id="go-spec">Check contract size in MT5</button>, it is the number most likely to differ between brokers.', true);
+  o.warnings.forEach(function (w) { addMsg('warn', w); });
+  if (o.commFromRef) addMsg('note', 'Commission of ' + money(o.commPerLot) + ' per lot included, estimated at ' + refLabel(S.mkt, m) + '.');
+  o.notes.forEach(function (w) { addMsg('note', w); });
+  var gs = $('go-spec');
+  if (gs) gs.onclick = function () { $('spec-card').open = true; $('spec-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+
+  function addStat(k, v, s) {
+    var d = document.createElement('div'); d.className = 'stat';
+    d.innerHTML = '<div class="k"></div><div class="v"></div><div class="s"></div>';
+    d.children[0].textContent = k; d.children[1].textContent = v; d.children[2].textContent = s || '';
+    stats.appendChild(d);
+  }
+  function addMsg(type, text, html) {
+    var d = document.createElement('div'); d.className = 'msg ' + type;
+    if (html) d.innerHTML = text; else d.textContent = text;
+    msgs.appendChild(d);
+  }
+}
+
+function setDock(d) {
+  $('dock-top').textContent = d.top; $('dock-sub').textContent = d.sub;
+  var el = $('dock-lot'); el.className = 'd-lot' + (d.zero ? ' zero' : '');
+  el.textContent = d.lot;
+  if (d.unit && d.lot !== '—') { var sm = document.createElement('small'); sm.textContent = d.unit; el.appendChild(sm); }
+}
+function rateSource() {
+  if (!S.rates) return 'built-in rate, ' + BUILTIN_RATES.date;
+  return 'reference rate, ' + S.rates.date;
+}
+function renderRatePill() {
+  var d = S.rates ? S.rates.date : BUILTIN_RATES.date;
+  var old = Date.now() - Date.parse(d + 'T00:00:00Z') > 4 * 86400000;
+  var pill = $('rate-pill');
+  pill.textContent = 'Rates ' + d.slice(5).replace('-', '/');
+  pill.classList.toggle('warn', old);
+}
+
+// ─────────────────────────── Sheets ───────────────────────────
+function openSheet(id) { $(id).hidden = false; document.body.style.overflow = 'hidden'; if (window.updateDock) updateDock(); }
+function closeSheet(id) { $(id).hidden = true; document.body.style.overflow = ''; if (window.updateDock) updateDock(); }
+document.querySelectorAll('[data-close]').forEach(function (b) { b.onclick = function () { closeSheet(b.getAttribute('data-close')); }; });
+document.querySelectorAll('.sheet').forEach(function (sh) { sh.addEventListener('click', function (e) { if (e.target === sh) closeSheet(sh.id); }); });
+
+function renderMarketList() {
+  var q = $('mk-search').value.trim().toLowerCase(), box = $('mk-list'); box.innerHTML = '';
+  Object.keys(CLS).forEach(function (cls) {
+    var items = INSTRUMENTS.filter(function (m) {
+      return m.cls === cls && (!q || (m.id + ' ' + m.label + ' ' + m.sub).toLowerCase().indexOf(q) >= 0);
+    });
+    if (!items.length) return;
+    var g = document.createElement('div'); g.className = 'grp';
+    g.innerHTML = '<h3>' + CLS[cls] + '</h3>';
+    items.forEach(function (m0) {
+      var m = spec(m0.id), row = document.createElement('div');
+      row.className = 'mrow' + (m.id === S.mkt ? ' cur' : '');
+      row.style.setProperty('--c', m.color);
+      var fav = S.favs.indexOf(m.id) >= 0;
+      row.innerHTML = '<span class="dot"></span><button type="button" class="nm"><b></b><span></span></button><button type="button" class="star' + (fav ? ' on' : '') + '" aria-label="Favourite">' + (fav ? '★' : '☆') + '</button>';
+      row.querySelector('b').textContent = m.label + (m.label !== m.id && m.cls !== 'fut' ? '  ' + m.sub : (m.cls === 'fut' ? '  ' + m.sub : ''));
+      row.querySelector('.nm span').textContent = specSummary(m) + (isVerified(m.id) ? ' · ✓' : '');
+      row.querySelector('.nm').onclick = function () { selectMarket(m.id); closeSheet('markets-sheet'); };
+      row.querySelector('.star').onclick = function () {
+        var i = S.favs.indexOf(m.id);
+        if (i >= 0) S.favs.splice(i, 1);
+        else if (S.favs.length >= 9) { toast('Up to 9 quick tabs'); return; }
+        else S.favs.push(m.id);
+        save(); renderFavs(); renderMarketList();
+      };
+      g.appendChild(row);
+    });
+    box.appendChild(g);
+  });
+  if (!box.children.length) box.innerHTML = '<p class="help">No market matches “' + escapeHtml(q) + '”.</p>';
+}
+
+function renderSettings() {
+  $('acct').value = S.acct;
+  var base = (S.rates && S.rates.data) ? S.rates.data : BUILTIN_RATES.data, box = $('rates-list'); box.innerHTML = '';
+  CURRENCIES.forEach(function (c) {
+    var row = document.createElement('div'); row.className = 'rate-row';
+    row.innerHTML = '<span class="cur">USD/' + c + '</span><span class="live"></span><input class="field" type="number" inputmode="decimal" step="any" placeholder="override">';
+    row.children[1].textContent = (+base[c]).toFixed(c === 'JPY' ? 2 : 5);
+    row.children[2].value = S.manual[c] || '';
+    row.children[2].setAttribute('aria-label', 'Manual USD/' + c + ' rate');
+    row.children[2].oninput = function () { if (this.value) S.manual[c] = this.value; else delete S.manual[c]; save(); recalc(); };
+    box.appendChild(row);
+  });
+  $('rates-refresh').hidden = !LIVE_NET;
+  $('rates-status').textContent = S.rates
+    ? 'Reference rates from ' + S.rates.date + ' (updated ' + new Date(S.rates.fetched).toLocaleString() + ').'
+    : (LIVE_NET ? 'Using built-in rates from ' + BUILTIN_RATES.date + '. Tap Update to fetch today’s.'
+                : 'Built-in rates from ' + BUILTIN_RATES.date + '. This web version can’t download new rates, so if one has moved, type today’s value in its box. The iPhone app updates them by itself.');
+}
+
+function fetchRates(manual) {
+  if (!LIVE_NET || !('fetch' in window)) return;
+  var url = 'https://api.frankfurter.dev/v2/rates?base=usd&quotes=' + CURRENCIES.join(',').toLowerCase();
+  if (manual) $('rates-status').textContent = 'Updating…';
+  fetch(url, { cache: 'no-store' }).then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); }).then(function (arr) {
+    var data = {}, date = '';
+    (arr || []).forEach(function (x) { if (x && x.quote && x.rate > 0) { data[x.quote.toUpperCase()] = x.rate; if (!date || x.date < date) date = x.date; } });
+    if (!CURRENCIES.every(function (c) { return data[c] > 0; })) throw new Error('incomplete');
+    S.rates = { date: date, fetched: Date.now(), data: data }; save();
+    renderRatePill(); recalc();
+    if (!$('settings-sheet').hidden) renderSettings();
+    if (manual) toast('Rates updated');
+  }).catch(function () {
+    if (manual) { $('rates-status').textContent = 'Could not reach the rates service. Your saved rates are still used.'; toast('Offline: kept saved rates'); }
   });
 }
 
-function getSL(){ var m=state.mkt; return state.slCustom[m] ? (parseFloat(state.slCustom[m])||0) : state.sl[m]; }
-
-function recalc(){
-  var m = state.mkt;
-  var pipVal = MKT[m].pipVal();
-  var minLot = MKT[m].minLot();
-  var sl = getSL();
-  var bal = parseFloat(document.getElementById('bal').value)||0;
-
-  var riskAmt = bal * state.risk / 100;
-  document.getElementById('r-lbl').textContent = 'Lot size · ' + state.risk.toFixed(2) + '% risk';
-  var raw = (sl > 0 && pipVal > 0) ? riskAmt / (sl * pipVal) : 0;
-  var step = (minLot >= 0.1) ? 0.1 : 0.01;
-  var lot = Math.round(Math.floor(raw / step) * step * 1000) / 1000;
-  var maxLot = MKT[m].maxLot ? MKT[m].maxLot() : Infinity;
-  var capped = lot > maxLot;
-  if(capped) lot = maxLot;
-  var slCost = lot * sl * pipVal;
-  var dec = (minLot >= 0.1) ? 1 : 2;
-
-  document.getElementById('r-lot').textContent = lot >= minLot ? lot.toFixed(dec) : '< ' + minLot;
-  document.getElementById('r-risk').textContent = '$' + riskAmt.toFixed(2) + ' at risk · SL cost $' + slCost.toFixed(2);
-  document.getElementById('m-pip').textContent = '$' + pipVal.toFixed(2);
-  document.getElementById('m-sl').textContent = (MKT[m].slUnit==='$') ? ('$' + sl) : ((MKT[m].slUnit==='points') ? (sl + ' pts') : (sl + ' pips'));
-  document.getElementById('m-raw').textContent = raw.toFixed(4);
-  var pr = document.getElementById('m-price');
-  if(pr) pr.textContent = (MKT[m].slUnit==='points') ? (sl*0.00001).toFixed(5) : '—';
-
-  var ws = [];
-  if(sl > 0 && lot < minLot) ws.push('Below the minimum lot of ' + minLot + ' — increase balance or tighten the stop.');
-  if(capped) ws.push('Capped at the ' + maxLot + ' lot maximum volume. The full size is ' + raw.toFixed(2) + ' lots — split it across ' + Math.ceil(raw/maxLot) + ' orders to take the intended risk.');
-  if((m === 'btc' || m === 'doge') && raw > 0 && raw < minLot * 2) ws.push('Lot is close to minimum — crypto lot granularity is coarse, actual risk may differ from target.');
-  var w = document.getElementById('warn');
-  if(ws.length){ w.textContent = ws.join(' '); w.style.display='block'; } else { w.style.display='none'; }
+// ─────────────────────────── Events ───────────────────────────
+function selectMarket(id) {
+  var a = document.activeElement; if (a && a.tagName === 'INPUT') a.blur();   // show the new market's own values
+  closeSlEditor(); S.mkt = id; save(); renderMarket(); fetchLivePrice(id);
+}
+function curPer() { return per(S.mkt); }
+function presetsOf(id) { var p = per(id); return (p.presets && p.presets.length) ? p.presets : BY_ID[id].presets; }
+// "80, 100 150;200" -> [80, 100, 150, 200]: positive, no repeats, smallest first, at most 7.
+function parsePresets(t) {
+  var out = [];
+  String(t || '').split(/[\s,;]+/).forEach(function (x) { var v = parseFloat(x); if (v > 0 && out.indexOf(v) < 0) out.push(v); });
+  return out.sort(function (a, b) { return a - b; }).slice(0, 7);
+}
+// Accepts "0.5", "0,5" (comma keyboards) or "0.5%".
+function riskNum(v) { return num(String(v || '').replace(',', '.').replace('%', '').trim()); }
+// Money amounts: "1,500" is fifteen hundred; "50,5" (comma keyboards) is fifty and a half.
+function moneyNum(v) {
+  var t = String(v || '').trim();
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, '');
+  return num(t.replace(',', '.'));
+}
+function riskOf(p) { return p.useCustom ? riskNum(p.riskCustom) : (p.risk || 0); }
+function ccySym(c) { return { USD: '$', EUR: '€', GBP: '£', JPY: '¥', CHF: 'Fr', CAD: 'C$', AUD: 'A$', NZD: 'NZ$' }[c] || c; }
+// Fixed-amount risk that is more than 1% of the balance gets the typo warning.
+function moneyTooBig(p) { var b = num(S.balance), v = moneyNum(p.money); return b > 0 && v > b / 100; }
+function renderRisk() {
+  var p = curPer(), useMoney = !!p.useMoney, custom = !!p.useCustom && !useMoney, inp = $('risk-cust'), mi = $('risk-usd');
+  [['risk-015', 0.15], ['risk-030', 0.3]].forEach(function (x) {
+    var on = !custom && !useMoney && p.risk === x[1];
+    $(x[0]).classList.toggle('on', on); $(x[0]).setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  if (document.activeElement !== inp) inp.value = p.riskCustom || '';
+  $('risk-cust-wrap').classList.toggle('on', custom);
+  $('risk-cust-wrap').classList.toggle('hi', custom && riskNum(p.riskCustom) > 1);
+  if (document.activeElement !== mi) mi.value = p.money || '';
+  $('risk-usd-sym').textContent = ccySym(S.acct);
+  $('risk-usd-lbl').textContent = 'Fixed ' + ccySym(S.acct);
+  $('risk-usd-wrap').classList.toggle('on', useMoney);
+  $('risk-usd-wrap').classList.toggle('hi', useMoney && moneyTooBig(p));
 }
 
+$('bal').addEventListener('input', function () { S.balance = this.value; save(); renderRisk(); recalc(); });
+// Preset buttons switch to that preset but keep the typed custom value for next time.
+function pickPreset(v) { var p = curPer(); p.risk = v; p.useCustom = false; p.useMoney = false; $('risk-cust').blur(); $('risk-usd').blur(); save(); renderRisk(); recalc(); }
+$('risk-015').onclick = function () { pickPreset(0.15); };
+$('risk-030').onclick = function () { pickPreset(0.3); };
+// Tapping Custom switches back to the remembered custom value and selects it, so typing replaces it.
+$('risk-cust').addEventListener('focus', function () {
+  var p = curPer(), el = this;
+  if (riskNum(el.value) > 0 && (!p.useCustom || p.useMoney)) { p.useCustom = true; p.useMoney = false; save(); renderRisk(); recalc(); }
+});
+$('risk-cust').addEventListener('input', function () {
+  var p = curPer(); p.riskCustom = this.value.trim(); p.useCustom = p.riskCustom !== '';
+  if (p.useCustom) p.useMoney = false;
+  save(); renderRisk(); recalc();
+});
+$('risk-cust').addEventListener('keydown', function (e) { if (e.key === 'Enter') this.blur(); });
+// Fixed amount: same behaviour as Custom %, but the number is money in the account currency.
+$('risk-usd').addEventListener('focus', function () {
+  var p = curPer(), el = this;
+  if (moneyNum(el.value) > 0 && !p.useMoney) { p.useMoney = true; save(); renderRisk(); recalc(); }
+});
+// Select the whole number when the box is tapped, so typing replaces it. Selecting during focus
+// (not on a timer) means the first keystroke can never land before the selection.
+function selectAllOnFocus(el) {
+  var fresh = false;
+  var all = function () { try { el.setSelectionRange(0, el.value.length); } catch (e) {} };
+  el.addEventListener('focus', function () { fresh = true; all(); });
+  el.addEventListener('mouseup', function (e) { if (fresh) { e.preventDefault(); fresh = false; } });
+  el.addEventListener('touchend', function () { if (fresh) { fresh = false; requestAnimationFrame(all); } });
+  el.addEventListener('input', function () { fresh = false; });
+  el.addEventListener('blur', function () { fresh = false; });
+}
+selectAllOnFocus($('risk-cust'));
+selectAllOnFocus($('risk-usd'));
+$('risk-usd').addEventListener('input', function () {
+  var p = curPer(); p.money = this.value.replace(/[^0-9.,]/g, ''); p.useMoney = p.money !== '';
+  if (this.value !== p.money) this.value = p.money;
+  save(); renderRisk(); recalc();
+});
+$('risk-usd').addEventListener('keydown', function (e) { if (e.key === 'Enter') this.blur(); });
+function closeSlEditor() { $('sl-editor').hidden = true; $('sl-edit').textContent = 'Edit stops'; $('sl-edit').setAttribute('aria-expanded', 'false'); }
+$('sl-edit').onclick = function () {
+  if (!$('sl-editor').hidden) { closeSlEditor(); return; }
+  $('sl-ed-in').value = presetsOf(S.mkt).join(', ');
+  $('sl-editor').hidden = false; $('sl-edit').textContent = 'Close'; $('sl-edit').setAttribute('aria-expanded', 'true');
+  $('sl-ed-in').focus();
+};
+$('sl-ed-save').onclick = function () {
+  var list = parsePresets($('sl-ed-in').value);
+  if (!list.length) { toast('Type at least one stop distance'); return; }
+  var p = curPer(); p.presets = list;
+  closeSlEditor(); save(); renderMarket(); toast('Stops saved for ' + BY_ID[S.mkt].label);
+};
+$('sl-ed-reset').onclick = function () {
+  var p = curPer(); delete p.presets;
+  closeSlEditor(); save(); renderMarket(); toast(BY_ID[S.mkt].label + ' stops back to default');
+};
+$('sl-ed-in').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('sl-ed-save').click(); });
+$('mode-dist').onclick = function () { curPer().mode = 'dist'; save(); renderMarket(); };
+$('mode-price').onclick = function () { curPer().mode = 'price'; save(); renderMarket(); };
+$('d-long').onclick = function () { curPer().dir = 'long'; save(); renderMarket(); };
+$('d-short').onclick = function () { curPer().dir = 'short'; save(); renderMarket(); };
+[['entry-d', 'entry'], ['entry-p', 'entry'], ['stop-p', 'stop'], ['tp-p', 'tp'], ['spread', 'spread']].forEach(function (x) {
+  $(x[0]).addEventListener('input', function () {
+    var p = curPer(); p[x[1]] = this.value;
+    if (x[1] === 'entry' && num(this.value) > 0 && p.refSrc !== 'manual') { p.ref = this.value; p.refSrc = 'entry'; p.refAt = Date.now(); }
+    save(); recalc();
+  });
+});
+$('tp-r').addEventListener('change', function () { curPer().tpR = num(this.value); save(); recalc(); });
+$('lot-btn').onclick = function () {
+  var v = $('lot').dataset.copy; if (!v) return;
+  var done = function () { toast('Copied ' + v); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(done, function () { toast(v + ' lots'); });
+  else toast(v + ' lots');
+};
+$('dock').onclick = function () { $('lot-btn').click(); };
+var dockWanted = false;
+function updateDock() { $('dock').hidden = !dockWanted || !$('markets-sheet').hidden || !$('settings-sheet').hidden; }
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(function (es) { dockWanted = !es[0].isIntersecting; updateDock(); }, { threshold: 0.6 }).observe($('lot-btn'));
+}
+$('open-markets').onclick = function () { $('mk-search').value = ''; renderMarketList(); openSheet('markets-sheet'); };
+$('mk-search').addEventListener('input', renderMarketList);
+$('open-settings').onclick = function () { renderSettings(); openSheet('settings-sheet'); };
+$('rate-pill').onclick = function () { renderSettings(); openSheet('settings-sheet'); };
+$('rates-refresh').onclick = function () { fetchRates(true); };
+$('acct').addEventListener('change', function () { S.acct = this.value; $('bal-ccy').textContent = S.acct; save(); renderMarket(); });
+$('reset-btn').onclick = function () { $('reset-confirm').hidden = false; };
+$('reset-no').onclick = function () { $('reset-confirm').hidden = true; };
+$('reset-yes').onclick = function () {
+  S = blankState(); save(); $('reset-confirm').hidden = true; closeSheet('settings-sheet');
+  $('bal').value = ''; $('bal-ccy').textContent = S.acct; renderMarket(); renderRatePill(); toast('Reset done'); fetchRates(false);
+};
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.sheet').forEach(function (s) { if (!s.hidden) closeSheet(s.id); }); });
+
+// ─────────────────────────── Boot ───────────────────────────
 load();
-markRisk();
-setMkt(state.mkt);
-setDir(state.dir);
+$('bal').value = S.balance || '';
+$('bal-ccy').textContent = S.acct;
+renderRatePill();
+renderMarket();
+if (!S.rates || Date.now() - (S.rates.fetched || 0) > 6 * 3600000) fetchRates(false);
+fetchLivePrice(S.mkt);
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState !== 'visible') return;
+  if (!S.rates || Date.now() - (S.rates.fetched || 0) > 6 * 3600000) fetchRates(false);
+  fetchLivePrice(S.mkt);
+});
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
-  });
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
 </script>
-
 </body>
 </html>

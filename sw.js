@@ -1,6 +1,6 @@
 // Ash's Lot Size Calculator - offline cache.
 // Bump VERSION whenever any file changes so phones pick up the new copy.
-const VERSION = 'ash-lot-size-v2';
+const VERSION = 'ash-lot-size-v6';
 const FILES = [
   './',
   './index.html',
